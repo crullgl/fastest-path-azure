@@ -168,7 +168,7 @@ route("supervisor", ["GET"], "supervisor", async () => {
   return json({ escalations: esc, aging, capacity, escalateAfterSeconds: +(process.env.ESCALATE_AFTER_SECONDS || 259200) });
 });
 
-route("reset", ["POST"], "admin/reset", async (req, ctx) => {
+route("reset", ["POST"], "demo/reset", async (req, ctx) => {
   await seed();
   ctx.log("Demo data reset by " + who(req));
   return json({ ok: true });
