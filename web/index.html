@@ -129,7 +129,7 @@ document.addEventListener("click", async e => {
     if (a.dataset.act === "send") {
       if (!sel.length) return toast("Select at least one option");
       busy = "send"; renderDetail();
-      const r = await api(`consults/${id}/outreach`, { method: "POST", body: JSON.stringify({ keys: sel }) });
+      let r; try { r = await api(`consults/${id}/outreach`, { method: "POST", body: JSON.stringify({ keys: sel }) }); } catch (e1) { toast("Waking up Azure services, retrying…"); r = await api(`consults/${id}/outreach`, { method: "POST", body: JSON.stringify({ keys: sel }) }); }
       toast(r.emailed ? `Email sent to ${r.to}${r.aiDrafted ? " · drafted by Azure OpenAI" : ""}` : "Outreach created (email not configured)");
     }
     if (a.dataset.act === "book") { busy = "book"; const r = await api(`consults/${id}/book`, { method: "POST", body: JSON.stringify({ slotId: pick.slotId }) }); toast(`Booked at ${r.site}`); pick = null; }

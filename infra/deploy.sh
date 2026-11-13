@@ -42,7 +42,14 @@ az storage account create -g $RG -n $ST -l $LOC --sku Standard_LRS --allow-blob-
 
 step "5/12 Azure SQL (serverless, free offer)"
 if [ -z "${SQLPW:-}" ]; then SQLPW="Fp$(openssl rand -hex 10)!aZ9"; save SQLPW "$SQLPW"; fi
-az sql server create -g $RG -n $SQL -l $LOC -u fpadmin -p "$SQLPW" --minimal-tls-version 1.2 -o none 2>/dev/null || az sql server update -g $RG -n $SQL -p "$SQLPW" -o none
+# Some regions refuse new SQL servers on newer subscriptions; try several until one accepts.
+if [ -n "${SQLNAME:-}" ] && az sql server show -g $RG -n $SQLNAME -o none 2>/dev/null; then SQL=$SQLNAME; else
+  for L in $LOC centralus westus2 westus3 southcentralus northcentralus eastus2; do
+    CAND="fp-sql-$L-$SUF"
+    if az sql server create -g $RG -n $CAND -l $L -u fpadmin -p "$SQLPW" --minimal-tls-version 1.2 -o none 2>/dev/null; then SQL=$CAND; save SQLNAME "$SQL"; ok "SQL server in $L"; break; fi
+    warn "$L not accepting new SQL servers"
+  done
+fi
 az sql server firewall-rule create -g $RG -s $SQL -n AllowAzureServices --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0 -o none 2>/dev/null || true
 if ! az sql db show -g $RG -s $SQL -n $DB -o none 2>/dev/null; then
   az sql db create -g $RG -s $SQL -n $DB -e GeneralPurpose -f Gen5 -c 2 --compute-model Serverless --auto-pause-delay 60 \
@@ -96,9 +103,9 @@ ok "$KV"
 
 step "10/12 Azure Functions API"
 if ! az functionapp show -g $RG -n $FUNC -o none 2>/dev/null; then
-  az functionapp create -g $RG -n $FUNC --storage-account $ST --consumption-plan-location $LOC --os-type Linux --runtime node --runtime-version 20 \
+  az functionapp create -g $RG -n $FUNC --storage-account $ST --consumption-plan-location $LOC --os-type Linux --runtime node --runtime-version 22 \
     --functions-version 4 ${APPI_CONN:+--app-insights $APPI} -o none \
-  || az functionapp create -g $RG -n $FUNC --storage-account $ST --flexconsumption-location $LOC --runtime node --runtime-version 20 ${APPI_CONN:+--app-insights $APPI} -o none
+  || az functionapp create -g $RG -n $FUNC --storage-account $ST --flexconsumption-location $LOC --runtime node --runtime-version 22 ${APPI_CONN:+--app-insights $APPI} -o none
 fi
 FUNC_ID=$(az functionapp show -g $RG -n $FUNC --query id -o tsv)
 PID=$(az functionapp identity assign -g $RG -n $FUNC --query principalId -o tsv)

@@ -79,7 +79,7 @@ route("outreach", ["POST"], "consults/{id}/outreach", async (req, ctx) => {
   const link = `${publicUrl()}/choose.html?t=${token}`;
   const drafted = await ai(
     "You write short, warm, plain-language outreach messages from VA scheduling to a Veteran. Never mention diagnoses, the medical specialty, or any health details. Under 70 words. No subject line. Do not list the appointment options; they are added after your text. End with: VA Scheduling.",
-    `Veteran first name: ${c.FirstName}. Their provider placed a referral and appointment options are ready. Ask them to tap the link below to pick a time, or reply if none work. Number of options: ${chosen.length}.`);
+    `Veteran first name: ${c.FirstName}. Their provider placed a referral and appointment options are ready. Ask them to tap the link below to pick a time; the page also has a "None of these work" and a "Call me" button. Do not ask them to reply to the email. Number of options: ${chosen.length}.`);
   const message = drafted || `Hi ${c.FirstName}, your provider placed a referral and we have appointment times ready for you. Tap the link below to pick the one that works best, or let us know if none of them do.\n\nVA Scheduling`;
   const text = `${message}\n\n${lines.join("\n")}\n\nChoose your time: ${link}\n\n(Hackathon demo with synthetic data. Not an official VA message.)`;
   const html = `<div style="font-family:Segoe UI,Arial,sans-serif;max-width:520px;color:#1b1f24">

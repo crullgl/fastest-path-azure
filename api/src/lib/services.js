@@ -19,7 +19,7 @@ async function driveMinutes(origin, dests) {
         const row = (j.matrix && j.matrix[0]) || [];
         const out = dests.map((d, i) => {
           const s = row[i] && row[i].response && row[i].response.routeSummary;
-          return s ? { minutes: Math.round(s.travelTimeInSeconds / 60), source: "azure-maps" } : { minutes: estDrive(origin, d), source: "estimate" };
+          return s ? { minutes: Math.max(5, Math.round(s.travelTimeInSeconds / 60)), source: "azure-maps" } : { minutes: estDrive(origin, d), source: "estimate" };
         });
         return out;
       }
@@ -33,13 +33,16 @@ async function staticMap(home, pins) {
   if (!MAPS_KEY()) return null;
   const all = [home, ...pins];
   const lats = all.map(p => p[0]), lons = all.map(p => p[1]);
-  const pad = 0.15;
-  const bbox = [Math.min(...lons) - pad, Math.min(...lats) - pad, Math.max(...lons) + pad, Math.max(...lats) + pad].join(",");
+  const minLat = Math.min(...lats), maxLat = Math.max(...lats), minLon = Math.min(...lons), maxLon = Math.max(...lons);
+  const center = [(minLon + maxLon) / 2, (minLat + maxLat) / 2];
+  const W = 640, H = 320;
+  const spanLon = Math.max(0.05, (maxLon - minLon) * 1.35), spanLat = Math.max(0.05, (maxLat - minLat) * 1.35);
+  const zoom = Math.max(5, Math.min(12, Math.floor(Math.min(Math.log2(W * 360 / (256 * spanLon)), Math.log2(H * 170 / (256 * spanLat))))));
   const colors = ["157347", "1d5fbf", "7a4fd6"];
   const pinVals = [`default|co0b2545|lcFFFFFF||'H'${home[1]} ${home[0]}`]
     .concat(pins.map((p, i) => `default|co${colors[i % 3]}|lcFFFFFF||'${i + 1}'${p[1]} ${p[0]}`));
-  const url = `https://atlas.microsoft.com/map/static?api-version=2024-04-01&tilesetId=microsoft.base.road&width=640&height=320` +
-    `&bbox=${encodeURIComponent(bbox)}` + pinVals.map(v => "&pins=" + encodeURIComponent(v)).join("") +
+  const url = `https://atlas.microsoft.com/map/static?api-version=2024-04-01&tilesetId=microsoft.base.road&width=${W}&height=${H}` +
+    `&center=${center[0].toFixed(4)},${center[1].toFixed(4)}&zoom=${zoom}` + pinVals.map(v => "&pins=" + encodeURIComponent(v)).join("") +
     `&subscription-key=${encodeURIComponent(MAPS_KEY())}`;
   try {
     const r = await fetch(url);
