@@ -1,6 +1,19 @@
 {
   "routes": [
     {
+      "route": "/present",
+      "rewrite": "/present.html",
+      "allowedRoles": [
+        "anonymous"
+      ]
+    },
+    {
+      "route": "/present.html",
+      "allowedRoles": [
+        "anonymous"
+      ]
+    },
+    {
       "route": "/login.html",
       "allowedRoles": [
         "anonymous"
