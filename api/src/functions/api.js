@@ -4,6 +4,7 @@ const D = require("../lib/data");
 const { q, ensure, seed, log } = require("../lib/db");
 const { buildOptions, SITE } = require("../lib/rank");
 const { ai, sendEmail, staticMap } = require("../lib/services");
+const { escalateDue } = require("../lib/escalate");
 
 const json = (body, status = 200) => ({ status, jsonBody: body, headers: { "cache-control": "no-store" } });
 const fmtSlot = d => new Date(d).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "UTC" });
@@ -17,7 +18,7 @@ function route(name, methods, path, fn) {
   app.http(name, {
     methods, route: path, authLevel: "anonymous",
     handler: async (req, ctx) => {
-      try { await ensure(); return await fn(req, ctx); }
+      try { await ensure(); if (["consults", "kpis", "supervisor"].includes(name)) await escalateDue(ctx).catch(e => ctx.error(e)); return await fn(req, ctx); }
       catch (e) { ctx.error(e); return json({ error: String(e.message || e) }, 500); }
     }
   });
