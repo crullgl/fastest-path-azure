@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Choose your appointment (demo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:"Source Sans 3","Segoe UI",system-ui,sans-serif;background:#f2f2f7;color:#1b1f24;font-size:16px}
+.top{background:#0b2545;color:#fff;padding:18px 18px 14px}
+.top b{background:#fff;color:#0b2545;border-radius:4px;padding:0 6px;margin-right:8px;font-weight:800}
+.top small{display:block;opacity:.7;font-size:12px;margin-top:4px}
+.wrap{max-width:520px;margin:0 auto;padding:14px}
+.demo{font-size:12px;color:#6b4e00;background:#fff8e1;border-radius:8px;padding:6px 10px;margin-bottom:12px}
+h1{font-size:22px;margin:4px 0 6px}
+p.lead{color:#5b6573;margin:0 0 12px}
+.map{width:100%;border-radius:14px;display:block;margin-bottom:12px;background:#dfe7ef;min-height:40px}
+.card{background:#fff;border-radius:16px;padding:14px;box-shadow:0 1px 3px #0002;margin-bottom:12px}
+.hd{display:flex;gap:10px;align-items:center}
+.num{width:28px;height:28px;border-radius:50%;color:#fff;font-weight:800;display:grid;place-items:center;flex:none}
+.sub{color:#667;font-size:14px}
+.slots{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+.slot{border:1px solid #ccd3dd;border-radius:10px;padding:6px 10px;font-size:14px;background:#fff;cursor:pointer}
+.slot.on{background:#1d5fbf;color:#fff;border-color:#1d5fbf}
+.btn{width:100%;border:0;border-radius:12px;padding:13px;font:800 16px "Source Sans 3",sans-serif;background:#157347;color:#fff;margin-top:8px;cursor:pointer}
+.btn.gh{background:#fff;color:#0b2545;border:1px solid #ccd3dd}
+.btn:disabled{opacity:.5}
+.ok{width:72px;height:72px;border-radius:50%;background:#157347;color:#fff;font-size:40px;display:grid;place-items:center;margin:20px auto 6px}
+.center{text-align:center}
+</style>
+</head>
+<body>
+<div class="top"><b>⇢</b>Fastest Path · choose your appointment<small>Hackathon demo · in production this screen sits behind VA.gov sign-in</small></div>
+<div class="wrap" id="app"><p class="lead">Loading your options…</p></div>
+<script>
+const t = new URLSearchParams(location.search).get("t") || "";
+const app = document.getElementById("app");
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const COLORS = ["#157347", "#1d5fbf", "#7a4fd6"];
+let data = null, picks = {};
+async function call(method, body) {
+  const r = await fetch("/api/choose/" + encodeURIComponent(t), { method, headers: { "content-type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || "Something went wrong");
+  return j;
+}
+const demoNote = `<div class="demo">Demo with synthetic data. Not an official VA message.</div>`;
+function render() {
+  const d = data;
+  if (d.status === "Scheduled") { app.innerHTML = demoNote + `<div class="ok">✓</div><h1 class="center">You're booked</h1><p class="lead center">${esc(d.response || "")}</p>`; return; }
+  if (d.status === "NeedsOptions" || d.status === "CallRequested") { app.innerHTML = demoNote + `<h1>Thanks${d.firstName ? ", " + esc(d.firstName) : ""}</h1><p class="lead">A scheduler will follow up with new options within one business day.</p>`; return; }
+  app.innerHTML = demoNote + `<h1>Hi ${esc(d.firstName)}, pick a time</h1><p class="lead">Your provider placed a referral. These are the soonest options near you.</p>
+    <img class="map" id="map" src="/api/map/${encodeURIComponent(t)}" alt="Map of your options">
+    ${d.options.map((o, i) => { const p = picks[o.siteId] ?? (o.slots[0] && o.slots[0].slotId);
+      return `<div class="card"><div class="hd"><span class="num" style="background:${COLORS[i % 3]}">${i + 1}</span><div><b>${esc(o.name)}</b><div class="sub">${o.type === "CC" ? "Community provider · VA covers it · " : ""}about ${o.drive} min from home</div></div></div>
+      ${o.slots.length ? `<div class="slots">${o.slots.map(s => `<button class="slot ${s.slotId === p ? "on" : ""}" data-site="${o.siteId}" data-slot="${s.slotId}">${esc(s.label)}</button>`).join("")}</div>
+      <button class="btn" data-book="${o.siteId}">Choose ${esc((o.slots.find(s => s.slotId === p) || o.slots[0]).label)}</button>` : `<p class="sub">No times left here.</p>`}</div>`; }).join("")}
+    <button class="btn gh" id="none">None of these work</button>
+    <button class="btn gh" id="callme">☎ Call me instead</button>`;
+  const m = document.getElementById("map"); m.onerror = () => m.remove(); m.onload = () => { if (m.naturalWidth < 10) m.remove(); };
+}
+function reasons() {
+  app.innerHTML = demoNote + `<h1>What doesn't work?</h1><p class="lead">Your answer goes straight to your scheduler.</p>` +
+    ["Too far to drive", "The times don't fit my schedule", "I'd rather go to a different location", "I need a ride or travel help", "Something else"]
+      .map(r => `<button class="btn gh" data-reason="${esc(r)}">${esc(r)}</button>`).join("") + `<button class="btn gh" id="back" style="margin-top:16px">← Back to options</button>`;
+}
+app.addEventListener("click", async e => {
+  const s = e.target.closest("[data-slot]"); if (s) { picks[s.dataset.site] = +s.dataset.slot; render(); return; }
+  const b = e.target.closest("[data-book]");
+  try {
+    if (b) {
+      const o = data.options.find(x => x.siteId === b.dataset.book), slotId = picks[o.siteId] ?? o.slots[0].slotId;
+      b.disabled = true; b.textContent = "Booking…";
+      const r = await call("POST", { action: "book", slotId });
+      app.innerHTML = demoNote + `<div class="ok">✓</div><h1 class="center">You're booked</h1><div class="card center"><b>${esc(r.booked.label)}</b><br>${esc(r.booked.site)}</div><p class="lead center">We'll send a reminder before your visit.</p>`;
+      return;
+    }
+    if (e.target.id === "none") return reasons();
+    if (e.target.id === "back") return render();
+    if (e.target.id === "callme") { await call("POST", { action: "call" }); data.status = "CallRequested"; return render(); }
+    const rs = e.target.closest("[data-reason]");
+    if (rs) { await call("POST", { action: "decline", reason: rs.dataset.reason }); data.status = "NeedsOptions"; return render(); }
+  } catch (err) { alert(err.message); render(); }
+});
+call("GET").then(d => { data = d; render(); }).catch(e => app.innerHTML = demoNote + `<h1>Link not found</h1><p class="lead">${esc(e.message)}</p>`);
+</script>
+</body>
+</html>

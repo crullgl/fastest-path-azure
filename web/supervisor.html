@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fastest Path · Supervisor (Azure demo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<style>
+.sup{display:grid;grid-template-columns:1.35fr 1fr;gap:16px;align-items:start}
+.sup .panel{padding:16px 18px}
+.sup h2{margin:0 0 4px;font-size:17px}
+.sub{color:var(--muted);font-size:13px;margin-bottom:10px}
+.esc{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.esc.new{animation:fl 1.6s ease;border-color:#f2b8b5}
+.esc .top{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.esc .ai{background:#eef6ff;border:1px solid #cfe3fb;border-radius:8px;padding:8px 10px;margin-top:8px;font-size:14px;color:#0b3a66}
+.buckets{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.bk{border-radius:10px;padding:10px;text-align:center;background:var(--bg)}
+.bk .v{font-size:24px;font-weight:800}.bk .l{font-size:12px;color:var(--muted);font-weight:600}
+.bars .r{display:grid;grid-template-columns:130px 1fr;gap:8px;align-items:center;margin:7px 0;font-size:13px}
+.bar{height:9px;border-radius:5px;position:relative;margin:2px 0}
+.bar span{position:absolute;left:calc(100% + 6px);top:-4px;font-size:11.5px;font-weight:700;color:var(--muted);white-space:nowrap}
+.legend{display:flex;gap:14px;font-size:12.5px;color:var(--muted);margin-bottom:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+@media (max-width:1000px){.sup{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="/"><div class="logo">⇢</div><div><h1>Fastest Path</h1><small>Supervisor view · running on Azure</small></div></a>
+  <nav class="tabs"><a href="/">Scheduler</a><a class="on" href="/supervisor.html">Supervisor</a></nav>
+  <div class="hdr-right"><span id="user"></span></div>
+</header>
+<div class="banner">Hackathon demo. Not an official VA system. All data is synthetic.</div>
+<div class="azure" id="azure"></div>
+<div class="kpis" id="kpis"></div>
+<main>
+  <div class="sup">
+    <div class="panel">
+      <h2>Escalations</h2>
+      <div class="sub" id="clock"></div>
+      <div id="esc"><div class="empty">Loading…</div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="panel"><h2>Open consult aging</h2><div class="sub">Days since the consult was received</div><div class="buckets" id="buckets"></div></div>
+      <div class="panel"><h2>Where the capacity is</h2><div class="sub">Earliest open slot by specialty, from Azure SQL. The gap between grey and teal is what schedulers can't see today.</div>
+        <div class="legend"><span><i style="background:#9aa8bb"></i>Tampa VAMC</span><span><i style="background:var(--teal)"></i>Best other VA site</span><span><i style="background:var(--cc)"></i>Best community</span></div>
+        <div class="bars" id="bars"></div></div>
+      <div class="panel"><h2>Demo controls</h2><div class="sub">Reloads all synthetic consults, slots and history in Azure SQL.</div><button class="btn" id="reset">↻ Reset demo data</button> <span id="confirm" style="display:none">Sure? <button class="btn go" id="yes">Yes, reset</button> <button class="btn" id="no">Cancel</button></span></div>
+    </div>
+  </div>
+</main>
+<div class="toast" id="toast"></div>
+<script src="common.js"></script>
+<script>
+let seen = null;
+async function load() {
+  const s = await api("supervisor");
+  const secs = s.escalateAfterSeconds;
+  $("#clock").textContent = secs < 86400 ? `Auto-escalated by an Azure Functions timer when there's no reply in 3 days. Demo clock: 3 days = ${Math.round(secs / 60)} minutes.` : "Auto-escalated by an Azure Functions timer when there's no reply in 3 days.";
+  const ids = new Set(s.escalations.map(e => e.ConsultId));
+  $("#esc").innerHTML = s.escalations.map(e => `<div class="esc ${seen && !seen.has(e.ConsultId) ? "new" : ""}">
+    <div class="top"><div><b>${esc(e.LastName)}, ${esc(e.FirstName)}</b> · ${esc(e.Specialty)} · ${esc(e.City)} · ${e.ContactPref}</div>
+      <div><span class="pill p-${e.Status}">${STATUS_LABEL[e.Status]}</span> <span class="age ${e.AgeDays > 7 ? "late" : "warn"}">Day ${e.AgeDays}</span></div></div>
+    <div class="osub" style="margin-top:4px">${e.Status === "NeedsOptions" ? `Veteran said: "${esc(e.DeclineReason)}"` : e.Status === "CallRequested" ? "Veteran asked for a call" : e.CallAttempts >= 2 ? `${e.CallAttempts} unanswered calls` : "No reply to emailed options"}${e.EscalatedAt ? " · escalated " + fmtWhen(e.EscalatedAt) : ""}</div>
+    ${e.AiSummary ? `<div class="ai"><b>Azure OpenAI:</b> ${esc(e.AiSummary)}</div>` : ""}
+    <div style="margin-top:8px"><a href="/#" data-open="${e.ConsultId}">Open consult</a> · ${e.CallbackAssigned ? '<span class="pill p-Scheduled">Callback assigned</span>' : `<button class="btn" data-assign="${e.ConsultId}">Assign callback</button>`}</div></div>`).join("") || `<div class="empty">Nothing stalled right now.</div>`;
+  if (seen) for (const id of ids) if (!seen.has(id)) toast("New escalation arrived");
+  seen = ids;
+  const b = s.aging, lab = ["0 to 3", "4 to 7", "8 to 14", "15+"], v = [b.b0, b.b1, b.b2, b.b3];
+  $("#buckets").innerHTML = v.map((n, i) => `<div class="bk" style="${i >= 2 && n ? "background:var(--redbg)" : ""}"><div class="v" style="${i >= 2 && n ? "color:var(--red)" : ""}">${n || 0}</div><div class="l">${lab[i]} days</div></div>`).join("");
+  const max = Math.max(...s.capacity.map(c => c.tampa || 0), 1);
+  const w = x => `${Math.max(2, (x || 0) / max * 80)}%`;
+  $("#bars").innerHTML = s.capacity.map(c => `<div class="r"><b>${c.specialty}</b><div>
+    ${c.tampa != null ? `<div class="bar" style="width:${w(c.tampa)};background:#9aa8bb"><span>${c.tampa}d</span></div>` : ""}
+    ${c.bestVa != null ? `<div class="bar" style="width:${w(c.bestVa)};background:var(--teal)" title="${esc(c.bestVaName)}"><span>${c.bestVa}d</span></div>` : ""}
+    ${c.bestCc != null ? `<div class="bar" style="width:${w(c.bestCc)};background:var(--cc)"><span>${c.bestCc}d</span></div>` : ""}</div></div>`).join("");
+}
+document.addEventListener("click", async e => {
+  const a = e.target.closest("[data-assign]");
+  if (a) { await api(`consults/${a.dataset.assign}/assign`, { method: "POST" }); toast("Callback assigned"); load(); }
+  const o = e.target.closest("[data-open]");
+  if (o) { e.preventDefault(); location.href = "/?c=" + encodeURIComponent(o.dataset.open); }
+});
+$("#reset").onclick = () => { $("#confirm").style.display = "inline"; };
+$("#no").onclick = () => { $("#confirm").style.display = "none"; };
+$("#yes").onclick = async () => { $("#confirm").style.display = "none"; toast("Resetting demo data…"); try { await api("admin/reset", { method: "POST" }); toast("Demo data reset"); seen = null; await Promise.all([load(), loadKpis()]); } catch (err) { toast(err.message); } };
+loadUser(); loadHealth(); load().catch(e => $("#esc").innerHTML = `<div class="empty">${esc(e.message)}</div>`); loadKpis();
+setInterval(() => { load().catch(() => {}); loadKpis().catch(() => {}); }, 10000);
+</script>
+</body>
+</html>

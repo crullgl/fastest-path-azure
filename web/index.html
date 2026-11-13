@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fastest Path · Scheduler (Azure demo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header>
+  <a class="brand" href="/"><div class="logo">⇢</div><div><h1>Fastest Path</h1><small>Consult scheduling console · running on Azure</small></div></a>
+  <nav class="tabs"><a class="on" href="/">Scheduler</a><a href="/supervisor.html">Supervisor</a></nav>
+  <div class="hdr-right"><span id="user"></span></div>
+</header>
+<div class="banner">Hackathon demo. Not an official VA system. All Veterans, providers, and availability are synthetic. Drive times come from Azure Maps.</div>
+<div class="azure" id="azure"></div>
+<div class="kpis" id="kpis"></div>
+<main>
+  <div class="grid">
+    <aside class="panel">
+      <div class="qhead"><h2><span>Consult queue</span><span id="qcount" style="color:var(--muted);font-weight:600"></span></h2>
+        <input id="search" placeholder="Search name, specialty, city, consult ID"><div class="chips" id="filters"></div></div>
+      <div class="qlist" id="qlist"><div class="empty">Loading consults from Azure SQL…</div></div>
+    </aside>
+    <section class="panel" id="detail"><div class="empty">Select a consult from the queue.</div></section>
+  </div>
+</main>
+<div class="toast" id="toast"></div>
+<script src="common.js"></script>
+<script>
+let consults = [], selId = null, filter = "All", search = "", detail = null, sel = [], pick = null, busy = false, pollT = null;
+const ORDER = { Stalled: 0, CallRequested: 1, NeedsOptions: 1, New: 2, Sent: 3, Scheduled: 4 };
+const FILTERS = ["All", "New", "Sent", "Stalled", "Scheduled"];
+const match = (c, f) => f === "All" || (f === "Stalled" ? ["Stalled", "CallRequested", "NeedsOptions"].includes(c.Status) : c.Status === f);
+const ageCls = a => a <= 4 ? "ok" : a <= 7 ? "warn" : "late";
+
+async function loadQueue() {
+  consults = await api("consults");
+  renderQueue();
+}
+function renderQueue() {
+  $("#filters").innerHTML = FILTERS.map(f => `<button class="chip ${filter === f ? "on" : ""}" data-f="${f}">${f === "Sent" ? "Options sent" : f} ${consults.filter(c => match(c, f)).length}</button>`).join("");
+  const q = search.toLowerCase();
+  const list = consults.filter(c => match(c, filter) && (!q || [c.FirstName, c.LastName, c.Specialty, c.City, c.ConsultId].join(" ").toLowerCase().includes(q)))
+    .sort((a, b) => (ORDER[a.Status] - ORDER[b.Status]) || ((b.Priority === "Expedited") - (a.Priority === "Expedited")) || (b.AgeDays - a.AgeDays));
+  $("#qcount").textContent = list.length + " shown";
+  $("#qlist").innerHTML = list.map(c => `<div class="qrow ${c.ConsultId === selId ? "sel" : ""}" data-id="${c.ConsultId}">
+      <div class="n">${esc(c.LastName)}, ${esc(c.FirstName)} ${c.Priority === "Expedited" ? '<span class="pill p-exp">Expedited</span>' : ""}</div>
+      <div><span class="pill p-${c.Status}">${STATUS_LABEL[c.Status]}</span></div>
+      <div class="m">${esc(c.Specialty)} · ${esc(c.City)} · ${c.ContactPref === "Phone" ? "☎ Phone" : "✉ Email"}</div>
+      <div class="age ${c.Status === "Scheduled" ? "ok" : ageCls(c.AgeDays)}">${c.Status === "Scheduled" ? "Booked in " + c.AgeDays + "d" : "Day " + c.AgeDays}</div></div>`).join("") || `<div class="empty">No consults match.</div>`;
+}
+
+async function openConsult(id, quiet) {
+  if (!quiet) { selId = id; sel = []; pick = null; renderQueue(); $("#detail").innerHTML = `<div class="empty">Ranking every option with live Azure Maps drive times…</div>`; }
+  const d = await api("consults/" + encodeURIComponent(id));
+  if (selId !== id) return;
+  const prevStatus = detail && detail.consult.ConsultId === id ? detail.consult.Status : null;
+  detail = d;
+  if (!sel.length) sel = d.options.filter(o => o.selectable).slice(0, 3).map(o => o.siteId);
+  renderDetail();
+  if (prevStatus && prevStatus !== d.consult.Status) {
+    document.querySelector("#detail .detail").classList.add("flash");
+    toast(`Status changed: ${STATUS_LABEL[d.consult.Status]}`);
+    loadQueue(); loadKpis();
+  }
+  clearTimeout(pollT);
+  if (["Sent", "NeedsOptions", "CallRequested", "Stalled"].includes(d.consult.Status)) pollT = setTimeout(() => openConsult(id, true).catch(() => {}), 4000);
+}
+
+function renderDetail() {
+  const d = detail, c = d.consult, done = c.Status === "Scheduled", best = d.best, home = d.home;
+  const savedDays = home && best ? Math.max(0, home.days - best.days) : 0;
+  const rows = d.options.map((o, i) => {
+    const isBest = o === best || (best && o.siteId === best.siteId);
+    return `<tr class="${o.selectable ? "" : "dim"} ${isBest ? "best" : ""}">
+      <td><b style="color:var(--muted)">${o.selectable ? d.options.filter(x => x.selectable).indexOf(o) + 1 : "·"}</b></td>
+      <td><div class="oname">${esc(o.name)} ${isBest ? '<span class="pill p-Scheduled">Best fit</span>' : ""} ${o.home ? '<span class="pill p-va">Home clinic</span>' : ""}</div>
+        <div class="osub"><span class="pill ${o.type === "VA" ? "p-va" : "p-cc"}">${o.type === "VA" ? "VA" : "Community"}</span> ${esc(o.full)}${o.selectable ? "" : " · not eligible"}</div></td>
+      <td><b>${o.days} days</b><div class="osub ${o.waitOk ? "ok" : "no"}">${o.waitOk ? "✓ within" : "✗ over"} ${d.std.wait}-day std</div></td>
+      <td><b>${o.drive} min</b> ${o.driveSource === "azure-maps" ? '<span class="pill p-az" title="Live route from Azure Maps">Azure Maps</span>' : '<span class="pill" title="Straight-line estimate" style="background:#eee;color:#666">est.</span>'}<div class="osub ${o.driveOk ? "ok" : "no"}">${o.driveOk ? "✓ within" : "✗ over"} ${d.std.drive}-min std</div></td>
+      <td>${o.slots.map(s => `<span class="slot ${pick && pick.slotId === s.slotId ? "on" : ""}" data-slot="${s.slotId}" ${o.selectable && !done ? "" : 'style="pointer-events:none"'}>${fmtShort(s.start)}</span>`).join("")}</td>
+      <td>${o.selectable && !done ? `<input type="checkbox" data-opt="${o.siteId}" ${sel.includes(o.siteId) ? "checked" : ""}>` : ""}</td></tr>`;
+  }).join("");
+  const eligTxt = d.ccEligible
+    ? `<div class="note cc"><b>Community care eligible.</b> No VA site offers ${esc(c.Specialty)} within ${d.std.wait} days and ${d.std.drive} minutes of this Veteran. Community options are unlocked and ranked with VA.</div>`
+    : `<div class="note va"><b>VA can meet the access standard.</b> ${d.vaMeets.map(v => `${esc(v.name)} (${v.days} days, ${v.drive} min)`).join(", ")}. Community care isn't needed.${home ? ` Without cross-facility visibility, this Veteran would wait ${home.days} days.` : ""}</div>`;
+  const o = d.outreach;
+  const outreachBox = o && o.Live ? `<div class="note ai"><b>${o.AiDrafted ? "Message drafted by Azure OpenAI" : "Outreach message"}</b> · sent ${fmtWhen(o.SentAt)} by Azure Communication Services email<br><span style="white-space:pre-wrap">${esc(o.MessageText || "")}</span>
+      <div style="margin-top:6px"><a href="/choose.html?t=${o.Token}" target="_blank">Open the Veteran's link ↗</a>${o.Response ? ` · Veteran response: <b>${esc(o.Response)}</b>` : " · waiting for the Veteran…"}</div></div>` : "";
+  const escBox = ["Stalled", "NeedsOptions", "CallRequested"].includes(c.Status) ? `<div class="note red"><b>${c.Status === "Stalled" ? "Escalated." : c.Status === "NeedsOptions" ? "Veteran said none of the options work." : "Veteran asked for a call."}</b> ${c.DeclineReason ? `Reason: "${esc(c.DeclineReason)}". ` : ""}${o && o.AiSummary ? `<br><b>Azure OpenAI:</b> ${esc(o.AiSummary)}` : ""} ${c.CallbackAssigned ? "<br>Supervisor callback assigned." : ""}</div>` : "";
+  const bookedBox = done && d.booked ? `<div class="note ok"><b>✓ Scheduled</b> ${d.booked.start ? fmtSlot(d.booked.start) + " at " : "at "}<b>${esc(d.booked.name || "")}</b>${d.booked.drive ? ` · about ${d.booked.drive} min drive` : ""}<br>Consult to scheduled: ${c.AgeDays} day${c.AgeDays === 1 ? "" : "s"}${d.booked.homeDays != null && d.booked.days != null ? ` · ${Math.max(0, d.booked.homeDays - d.booked.days)} days sooner than the home clinic` : ""}</div>` : "";
+  $("#detail").innerHTML = `<div class="detail">
+    <div class="dtop"><div><h2>${esc(c.LastName)}, ${esc(c.FirstName)} ${esc(c.MI || "")}.</h2>
+      <div class="meta">${c.Age} yrs · ${esc(c.Era || "")} era · ${esc(c.City)}, FL · prefers ${c.ContactPref === "Phone" ? "phone calls" : "email"}</div></div>
+      <div style="text-align:right"><span class="pill p-${c.Status}" style="font-size:13px">${STATUS_LABEL[c.Status]}</span><div class="age ${done ? "ok" : ageCls(c.AgeDays)}" style="margin-top:4px">${done ? "Scheduled in " + c.AgeDays + " day" + (c.AgeDays === 1 ? "" : "s") : "Day " + c.AgeDays + " of 7-day standard"}</div></div></div>
+    <div class="facts">
+      <div class="fact"><div class="l">Consult</div><div class="v">${esc(c.ConsultId)}</div></div>
+      <div class="fact"><div class="l">Specialty</div><div class="v">${esc(c.Specialty)} ${c.Priority === "Expedited" ? '<span class="pill p-exp">Expedited</span>' : ""}</div></div>
+      <div class="fact"><div class="l">Reason</div><div class="v">${esc(c.Reason)}</div></div>
+      <div class="fact"><div class="l">Ordered by</div><div class="v">${esc(c.OrderedBy)}</div></div></div>
+    ${bookedBox}${escBox}
+    ${home && best ? `<div class="impact"><div><div class="l">Home clinic only</div><div class="big">${home.days} days</div><div class="osub">${esc(home.name)}</div></div><div style="font-size:22px;color:var(--muted)">→</div>
+      <div><div class="l">Fastest Path best fit</div><div class="big" style="color:var(--green)">${best.days} days</div><div class="osub">${esc(best.name)} · ${best.drive} min drive${best.driveSource === "azure-maps" ? " (Azure Maps)" : ""}</div></div>
+      <div class="saved"><div class="l">Sooner</div><div class="big">${savedDays}d</div></div></div>` : ""}
+    ${eligTxt}${outreachBox}
+    <div class="sect">Every option, ranked by who can see this Veteran first</div>
+    <div style="overflow:auto"><table><thead><tr><th></th><th>Location</th><th>Earliest</th><th>Drive</th><th>Next open slots (click to book)</th><th>Email</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${done ? "" : `<div class="actions">
+      <button class="btn pri" data-act="send" ${busy ? "disabled" : ""}>${busy === "send" ? '<span class="spin"></span> Drafting with Azure OpenAI and sending…' : `✉ Email ${sel.length} option${sel.length === 1 ? "" : "s"} to Veteran`}</button>
+      <button class="btn go" data-act="book" ${pick && !busy ? "" : "disabled"}>Book selected slot</button>
+      <button class="btn" data-act="call">Log call: no answer</button>
+      ${["Stalled", "NeedsOptions", "CallRequested"].includes(c.Status) && !c.CallbackAssigned ? `<button class="btn" data-act="assign">Assign supervisor callback</button>` : ""}
+    </div>`}
+    <div class="sect">Contact log <span style="color:var(--teal);font-size:11px">auto-captured in Azure SQL</span></div>
+    <div class="log">${d.log.map(e => `<div class="e ${e.Kind}"><span class="d">${fmtWhen(e.At)}</span>${esc(e.Text)}</div>`).join("")}</div>
+  </div>`;
+}
+
+document.addEventListener("click", async e => {
+  const t = e.target;
+  const f = t.closest("[data-f]"); if (f) { filter = f.dataset.f; renderQueue(); return; }
+  const row = t.closest(".qrow"); if (row) { openConsult(row.dataset.id).catch(err => toast(err.message)); return; }
+  const sl = t.closest("[data-slot]"); if (sl) { const id = +sl.dataset.slot; pick = pick && pick.slotId === id ? null : { slotId: id }; renderDetail(); return; }
+  const a = t.closest("[data-act]"); if (!a || !detail || busy) return;
+  const id = detail.consult.ConsultId;
+  try {
+    if (a.dataset.act === "send") {
+      if (!sel.length) return toast("Select at least one option");
+      busy = "send"; renderDetail();
+      const r = await api(`consults/${id}/outreach`, { method: "POST", body: JSON.stringify({ keys: sel }) });
+      toast(r.emailed ? `Email sent to ${r.to}${r.aiDrafted ? " · drafted by Azure OpenAI" : ""}` : "Outreach created (email not configured)");
+    }
+    if (a.dataset.act === "book") { busy = "book"; const r = await api(`consults/${id}/book`, { method: "POST", body: JSON.stringify({ slotId: pick.slotId }) }); toast(`Booked at ${r.site}`); pick = null; }
+    if (a.dataset.act === "call") { const r = await api(`consults/${id}/call`, { method: "POST", body: JSON.stringify({ outcome: "no answer" }) }); toast(r.attempts >= 2 ? "Two unanswered calls. Escalated." : "Call attempt logged"); }
+    if (a.dataset.act === "assign") { await api(`consults/${id}/assign`, { method: "POST" }); toast("Callback assigned"); }
+  } catch (err) { toast(err.message); }
+  busy = false;
+  await Promise.all([openConsult(id, true), loadQueue(), loadKpis()]).catch(() => {});
+});
+document.addEventListener("change", e => {
+  const cb = e.target.closest("[data-opt]"); if (!cb) return;
+  const k = cb.dataset.opt;
+  if (cb.checked) { if (sel.length >= 3) { cb.checked = false; return toast("Up to 3 options per email"); } sel.push(k); } else sel = sel.filter(x => x !== k);
+  renderDetail();
+});
+$("#search").addEventListener("input", e => { search = e.target.value; renderQueue(); });
+
+(async () => {
+  loadUser(); loadHealth();
+  try { await Promise.all([loadQueue(), loadKpis()]); openConsult(new URLSearchParams(location.search).get("c") || "CN-24817").catch(() => {}); }
+  catch (e) { $("#qlist").innerHTML = `<div class="empty">Couldn't reach the API: ${esc(e.message)}<br>The free-tier database may be waking up. Refresh in 30 seconds.</div>`; }
+  setInterval(() => { loadQueue().catch(() => {}); loadKpis().catch(() => {}); }, 15000);
+  setInterval(loadHealth, 60000);
+})();
+</script>
+</body>
+</html>

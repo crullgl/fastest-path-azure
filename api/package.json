@@ -1,0 +1,12 @@
+{
+  "name": "fastest-path-api",
+  "version": "1.0.0",
+  "description": "Fastest Path hackathon demo API (synthetic data)",
+  "main": "src/functions/*.js",
+  "scripts": { "start": "func start" },
+  "dependencies": {
+    "@azure/communication-email": "^1.0.0",
+    "@azure/functions": "^4.5.0",
+    "mssql": "^11.0.1"
+  }
+}
