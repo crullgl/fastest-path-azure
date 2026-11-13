@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>2-min Pitch · Fastest Path · The Presentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#050c18;--navy:#0b2545;--ink:#eaf1fb;--mut:#8ea3c0;--teal:#2bd4bd;--teal2:#0f766e;--red:#ff5a4e;--amber:#ffb547;--green:#35d07f;--violet:#a98bff;--blue:#4c9bff}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Source Sans 3",system-ui,sans-serif;overflow:hidden}
+#bgc{position:fixed;inset:0;z-index:0}
+#stage{position:absolute;left:50%;top:50%;width:1600px;height:900px;z-index:1}
+.slide.cut{display:none}
+.slide{position:absolute;inset:0;padding:80px 110px;opacity:0;pointer-events:none;transform:scale(1.03);filter:blur(6px);transition:opacity .7s ease,transform .9s cubic-bezier(.2,.7,.2,1),filter .7s}
+.slide.on{opacity:1;pointer-events:auto;transform:none;filter:none}
+.kick{font-family:"JetBrains Mono",monospace;font-size:18px;letter-spacing:3px;text-transform:uppercase;color:var(--teal)}
+h1{font-size:110px;line-height:.98;margin:18px 0;font-weight:900;letter-spacing:-2px}
+h2{font-size:68px;line-height:1.02;margin:14px 0 24px;font-weight:900;letter-spacing:-1px}
+p{font-size:28px;line-height:1.4;color:var(--mut);margin:0}
+.grad{background:linear-gradient(90deg,#fff,#9fe9de 60%,#4c9bff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.redg{background:linear-gradient(90deg,#ff8a7a,#ff5a4e);-webkit-background-clip:text;background-clip:text;color:transparent}
+.btn{display:inline-flex;align-items:center;gap:10px;font:800 24px "Source Sans 3";padding:16px 30px;border-radius:16px;border:0;cursor:pointer;color:#03221e;background:linear-gradient(135deg,#2bd4bd,#4c9bff);box-shadow:0 10px 40px #2bd4bd40;transition:transform .15s}
+.btn:hover{transform:translateY(-2px) scale(1.02)}
+.btn.ghost{background:rgba(255,255,255,.08);color:#fff;box-shadow:none;border:1px solid rgba(255,255,255,.2)}
+.src{position:absolute;left:110px;bottom:58px;font-size:16px;color:#5f7699;font-family:"JetBrains Mono",monospace}
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .8s,transform .8s cubic-bezier(.2,.7,.2,1)}
+.reveal.in{opacity:1;transform:none}
+/* S1 */
+#s1 .line2{margin-top:30px}
+.hint{position:absolute;right:110px;bottom:60px;font-family:"JetBrains Mono";font-size:17px;color:#5f7699;animation:blink 2s infinite}
+@keyframes blink{50%{opacity:.3}}
+/* S2 */
+.days{display:grid;grid-template-columns:repeat(8,58px);gap:10px}
+.day{width:58px;height:58px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);display:grid;place-items:center;font:700 15px "JetBrains Mono";color:transparent;transition:background .25s,transform .25s,color .25s,box-shadow .25s}
+.day.f{background:#ff5a4e;color:#2b0805;transform:scale(1.04);box-shadow:0 0 18px #ff5a4e70}
+.day.g{background:#35d07f;color:#04210f;box-shadow:0 0 18px #35d07f70}
+.counter{font-size:300px;font-weight:900;line-height:.8;letter-spacing:-10px;font-variant-numeric:tabular-nums}
+.caption{font-size:34px;color:#fff;min-height:48px;font-weight:700;transition:opacity .3s}
+/* S3 */
+.files{display:flex;gap:34px;margin-top:40px}
+.file{flex:1;position:relative;background:linear-gradient(160deg,#0f1f38,#0a1628);border:1px solid #1d3354;border-radius:22px;padding:34px;opacity:0;transform:translateY(60px) rotate(-2deg);transition:all .8s cubic-bezier(.2,.8,.2,1.1)}
+.file.in{opacity:1;transform:none}
+.file h3{font-size:34px;margin:0 0 12px}
+.file p{font-size:23px}
+.stamp{position:absolute;top:-22px;right:24px;font:800 18px "JetBrains Mono";color:#ff5a4e;border:3px solid #ff5a4e;border-radius:8px;padding:6px 12px;transform:rotate(8deg) scale(2.4);opacity:0;transition:all .35s cubic-bezier(.3,1.6,.5,1);background:#050c18}
+.file.in .stamp{transform:rotate(8deg) scale(1);opacity:1;transition-delay:.55s}
+/* S4 map */
+.mapwrap{display:flex;gap:40px;align-items:flex-start;margin-top:10px}
+#map{width:820px;height:640px;border-radius:26px;background:radial-gradient(800px 500px at 30% 30%,#0e2a4c,#071426);border:1px solid #1b3152}
+.pin text{font-family:"Source Sans 3";font-weight:800}
+.arc{fill:none;stroke-width:3;stroke-dasharray:900;stroke-dashoffset:900;transition:stroke-dashoffset 1.2s ease}
+.on4 .arc{stroke-dashoffset:0}
+.badge{opacity:0;transform-box:fill-box;transform-origin:center;transform:scale(.3);transition:all .5s cubic-bezier(.3,1.6,.5,1)}
+.on4 .badge{opacity:1;transform:none}
+.ghostq{transition:opacity .4s}.on4 .ghostq{opacity:0}
+.pulse{transform-box:fill-box;transform-origin:center;animation:pulse 1.6s infinite;opacity:0}
+.on4 .pulse{opacity:1}
+@keyframes pulse{0%{transform:scale(.6);opacity:.9}100%{transform:scale(2.6);opacity:0}}
+.rank{flex:1}
+.rk{display:flex;align-items:center;gap:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px 20px;margin-bottom:12px;font-size:23px;opacity:0;transform:translateX(40px);transition:all .6s cubic-bezier(.2,.8,.2,1)}
+.on4 .rk{opacity:1;transform:none}
+.rk b{font-size:25px}.rk .n{font:800 22px "JetBrains Mono";color:#5f7699;width:26px}
+.rk .d{margin-left:auto;text-align:right;font-family:"JetBrains Mono";font-size:19px}
+.rk.best{border-color:#35d07f;background:#35d07f18;box-shadow:0 0 30px #35d07f30}
+.ok{color:var(--green)}.no{color:var(--red)}
+.bigswap{font-size:64px;font-weight:900;margin:6px 0 18px;font-variant-numeric:tabular-nums}
+/* S5 race */
+.lane{position:relative;height:200px;margin:14px 0 22px;border-radius:20px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+.lane .lab{position:absolute;left:24px;top:16px;font:700 18px "JetBrains Mono";letter-spacing:2px;text-transform:uppercase}
+.lane .track{position:absolute;left:24px;right:24px;bottom:34px;height:4px;background:rgba(255,255,255,.1);border-radius:2px}
+.lane .fill{position:absolute;left:0;top:0;bottom:0;border-radius:2px;width:0}
+.lane .vet{position:absolute;bottom:-14px;width:32px;height:32px;margin-left:-16px;border-radius:50%;display:grid;place-items:center;font-size:18px;left:0}
+.ev{position:absolute;bottom:52px;transform:translateX(-50%);background:#0f1f38;border:1px solid #2a4366;border-radius:10px;padding:5px 10px;font-size:16px;white-space:nowrap;opacity:0;transition:opacity .3s,transform .3s}
+.ev.in{opacity:1;transform:translateX(-50%) translateY(-6px)}
+.finish{position:absolute;right:24px;top:12px;font:900 44px "Source Sans 3";font-variant-numeric:tabular-nums}
+.axis{display:flex;justify-content:space-between;margin:0 24px;font:500 15px "JetBrains Mono";color:#5f7699}
+/* S6 phone */
+.phonewrap{display:flex;gap:70px;align-items:center}
+.phone{width:380px;height:720px;background:#000;border-radius:54px;padding:14px;box-shadow:0 30px 80px #000a,0 0 0 2px #22324a;flex:none}
+.scr{width:100%;height:100%;background:#f2f2f7;border-radius:42px;overflow:hidden;color:#111;display:flex;flex-direction:column;position:relative}
+.sb{text-align:center;padding:18px 10px 10px;background:#fff;border-bottom:1px solid #ddd;font-size:14px;color:#666}.sb b{display:block;color:#111;font-size:17px}
+.msgs{flex:1;padding:14px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.bub{background:#e5e5ea;border-radius:18px;padding:10px 14px;font-size:16px;line-height:1.3;max-width:88%;animation:pop .35s cubic-bezier(.3,1.5,.5,1)}
+.bub.me{background:#1d7cf2;color:#fff;align-self:flex-end}
+.lnk{color:#1d5fbf;text-decoration:underline;font-weight:700;cursor:pointer}
+@keyframes pop{from{transform:scale(.6);opacity:0}}
+.typing{display:flex;gap:5px;background:#e5e5ea;border-radius:18px;padding:12px 14px;width:64px}
+.typing i{width:8px;height:8px;border-radius:50%;background:#999;animation:tp 1s infinite}.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes tp{50%{transform:translateY(-5px)}}
+.ptop{background:#0b2545;color:#fff;padding:20px 16px 12px;font-weight:700;font-size:17px}
+.ptop small{display:block;opacity:.6;font-weight:500;font-size:12px;margin-top:3px}
+.pbody{flex:1;padding:12px;display:flex;flex-direction:column;gap:9px;overflow:auto}
+.pcard{background:#fff;border-radius:14px;padding:12px;box-shadow:0 1px 3px #0002;font-size:15px}
+.pcard b{font-size:16px}
+.pbtn{width:100%;border:0;border-radius:12px;padding:11px;font:800 15px "Source Sans 3";background:#157347;color:#fff;margin-top:8px;cursor:pointer}
+.pbtn.gh{background:#fff;color:#0b2545;border:1px solid #ccd}
+.sched{flex:1;background:linear-gradient(160deg,#0f1f38,#0a1628);border:1px solid #1d3354;border-radius:24px;padding:30px}
+.sched h3{font-size:26px;margin:0 0 6px;color:#fff}
+.srow{display:flex;justify-content:space-between;font-size:22px;padding:12px 0;border-bottom:1px solid #1d3354}
+.status{display:inline-block;font:800 20px "JetBrains Mono";padding:6px 14px;border-radius:99px;background:#1d5fbf33;color:#9cc4ff;transition:all .4s}
+.status.done{background:#35d07f2a;color:#35d07f;box-shadow:0 0 24px #35d07f55}
+.status.warn{background:#ffb5472a;color:#ffb547}
+#confetti{position:absolute;inset:0;pointer-events:none;z-index:5}
+/* S7 escalation */
+.esc{display:grid;grid-template-columns:1fr 1fr;gap:34px;margin-top:30px}
+.ecard{border-radius:24px;padding:30px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);min-height:300px;transition:all .3s}
+.ecard h3{font:700 20px "JetBrains Mono";letter-spacing:2px;text-transform:uppercase;margin:0 0 18px;color:#8ea3c0}
+.estate{font-size:44px;font-weight:900;line-height:1.1}
+.ecard.alarm{border-color:#ff5a4e;box-shadow:0 0 0 2px #ff5a4e,0 0 60px #ff5a4e55;animation:shake .4s 2}
+.ecard.good{border-color:#35d07f;box-shadow:0 0 50px #35d07f40}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:10px;border-radius:5px;background:linear-gradient(90deg,#2bd4bd var(--p,0%),#1d3354 var(--p,0%));outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:34px;height:34px;border-radius:50%;background:#fff;box-shadow:0 0 0 6px #2bd4bd55;cursor:pointer}
+input[type=range]::-moz-range-thumb{width:34px;height:34px;border-radius:50%;background:#fff;border:0;cursor:pointer}
+.dayread{font:900 52px "JetBrains Mono";color:#fff}
+/* S8 calc */
+.calc{display:grid;grid-template-columns:1fr 1fr;gap:60px;margin-top:20px;align-items:center}
+.ctl{margin-bottom:34px}
+.ctl label{display:flex;justify-content:space-between;font-size:24px;margin-bottom:14px;color:#cfdbee}
+.ctl label b{font-family:"JetBrains Mono";color:#fff}
+.result{text-align:center;background:radial-gradient(circle at 50% 30%,#123a5e,#0a1628);border:1px solid #1d3354;border-radius:30px;padding:50px 30px}
+.result .v{font-size:150px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-4px}
+.result .l{font-size:28px;color:#cfdbee}
+.result .y{font-size:22px;color:#8ea3c0;margin-top:14px}
+/* S9 arch */
+#arch text{font-family:"Source Sans 3"}
+.anode rect{fill:#0f1f38;stroke:#2a4366;stroke-width:2}
+.anode.hot rect{stroke:#2bd4bd;filter:drop-shadow(0 0 12px #2bd4bd88)}
+.p2{opacity:0;transition:opacity .6s}.phase2 .p2{opacity:1}
+.tog{display:inline-flex;background:rgba(255,255,255,.06);border-radius:14px;padding:5px;margin-top:6px}
+.tog button{white-space:nowrap;font:700 20px "Source Sans 3";background:none;border:0;color:#8ea3c0;padding:10px 20px;border-radius:10px;cursor:pointer}
+.tog button.on{background:#fff;color:#0b2545}
+/* finale */
+#s10{text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+#s10 .days{margin:30px auto}
+/* chrome */
+#nav{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:10px;z-index:4}
+#nav i{width:10px;height:10px;border-radius:50%;background:#2a4366;cursor:pointer;transition:all .3s}
+#nav i.on{background:#2bd4bd;width:30px;border-radius:5px}
+#top{position:fixed;left:22px;top:18px;z-index:4;display:flex;align-items:center;gap:10px;font-weight:800;font-size:16px;color:#cfdbee}
+#top .lg{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#2bd4bd,#4c9bff);display:grid;place-items:center;color:#03221e}
+#tr{position:fixed;right:18px;top:14px;z-index:4;display:flex;gap:8px}
+#tr button,#tr a{font:600 14px "Source Sans 3";background:rgba(255,255,255,.07);color:#cfdbee;border:1px solid rgba(255,255,255,.14);border-radius:9px;padding:6px 12px;cursor:pointer;text-decoration:none}
+#disc{position:fixed;left:22px;bottom:14px;z-index:4;font-size:12px;color:#4f6687}
+#notes{position:fixed;left:50%;transform:translateX(-50%);bottom:46px;width:min(920px,92vw);background:#fffbe8;color:#3b2f00;border-radius:14px;padding:14px 18px;font-size:17px;line-height:1.45;z-index:6;display:none;box-shadow:0 10px 40px #000a}
+#notes.show{display:block}#notes b{display:block;font:700 12px "JetBrains Mono";letter-spacing:1px;color:#8a6d00;margin-bottom:4px}
+#prog{position:fixed;left:0;top:0;height:3px;background:linear-gradient(90deg,#2bd4bd,#4c9bff);z-index:5;transition:width .5s}
+#clock{position:fixed;right:18px;bottom:14px;z-index:60;font:600 14px ui-monospace,Menlo,monospace;color:#8fa3bf;background:rgba(10,16,28,.7);border:1px solid #223049;border-radius:8px;padding:5px 10px}#clock.warn{color:#ffb547}#clock.over{color:#ff5a4e}
+</style>
+</head>
+<body>
+<canvas id="bgc"></canvas>
+<div id="prog"></div>
+<div id="top"><span class="lg">⇢</span>Fastest Path</div>
+<div id="tr"><button id="ntog">Notes (N)</button><button id="fsb">Fullscreen (F)</button><a href="/">Live demo</a><a href="https://fastestpath.makerdoctrine.com/">Overview</a></div>
+<div id="disc">Concept prototype · Not an official VA website · Example data is synthetic</div>
+<div id="stage">
+
+<!-- 1 -->
+<section class="slide cut" id="s1" data-notes="Don't introduce yourself yet. Say the first line, then stop. Let them picture someone. Then the second line.">
+  <div class="kick reveal" data-d="200">Access timeliness · VA Hackathon 2026</div>
+  <h1 class="reveal" data-d="700" style="margin-top:120px">Think of one Veteran<br><span class="grad">you love.</span></h1>
+  <p class="reveal line2" data-d="2600" style="font-size:44px;color:#cfdbee">Now imagine they need a specialist.</p>
+  <div class="hint">press → to continue</div>
+</section>
+
+<!-- 2 -->
+<section class="slide" id="s2" data-notes="[Let the counter run. Say nothing until it lands.] Fifty-six days. That is how long Veterans waited, on average, when VA missed its 30-day mark for community mental health care. Not my number. The Inspector General's, August 2026. Fifty-six days of &quot;Did they call yet?&quot;">
+  <div class="kick">The wait</div>
+  <div style="display:flex;gap:90px;align-items:center;margin-top:40px">
+    <div class="days" id="grid2" title="Click to replay"></div>
+    <div>
+      <div class="counter redg" id="cnt2">0</div>
+      <div style="font-size:40px;font-weight:800;margin:6px 0 26px">days</div>
+      <div class="caption" id="cap2"></div>
+    </div>
+  </div>
+  <div class="src">When community mental health appointments missed the 30-day mark, Veterans waited an average of 56 days. VA OIG 25-03623-147, Aug 2026</div>
+</section>
+
+<!-- 3 -->
+<section class="slide" id="s3" data-notes="Here is what hurts. The appointment often existed. OIG found schedulers can't see openings at other VA sites. Outreach still runs on phone tag and postal mail. GAO counts dozens of scheduling systems. This is not a doctor problem. It is a visibility problem.">
+  <div class="kick">What the Inspector General found in 2026</div>
+  <h2>The appointment existed.<br><span class="grad">We just couldn't see it.</span></h2>
+  <div class="files">
+    <div class="file"><div class="stamp">VA OIG · JUN 2026</div><h3>Blind to other VA sites</h3><p>System limits keep schedulers from seeing availability at other VA facilities within wait-time and drive-time standards. Eligible Veterans aren't always told all their options.</p></div>
+    <div class="file"><div class="stamp">VA OIG · AUG 2026</div><h3>Phone tag and postal mail</h3><p>Community care scheduling delays were driven in part by relying on phone calls and mailed letters, and trouble reaching providers.</p></div>
+    <div class="file"><div class="stamp">GAO · 2026</div><h3>Dozens of systems</h3><p>VA uses dozens of systems to schedule, refer, and track waits. Added steps have increased how long scheduling takes.</p></div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" id="s4" data-notes="So we built Fastest Path. One screen: every VA site and every eligible community provider, ranked against the MISSION Act standards. [Click Turn on Fastest Path.] This Veteran in Brandon: 74 days at his home clinic, or 11 days at Bay Pines, inside the drive standard, and still in VA.">
+  <div class="kick">One Veteran · Neurology · Brandon, FL · synthetic example</div>
+  <div class="mapwrap">
+    <svg id="map" viewBox="0 0 820 640"></svg>
+    <div class="rank">
+      <h2 style="font-size:52px;margin:6px 0 4px" id="h4">What the scheduler sees today</h2>
+      <div class="bigswap" id="swap4"><span class="redg">74 days</span></div>
+      <div id="rk4"></div>
+      <button class="btn" id="go4" style="margin-top:14px">⚡ Turn on Fastest Path</button>
+    </div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="slide cut" id="s5" style="padding-top:64px" data-notes="Illustrative timeline, not measured data. The point: the top lane is all waiting on contact. The bottom lane is one text and one tap.">
+  <div class="kick">Same Veteran. Two paths. · illustrative</div>
+  <h2 style="margin-bottom:10px">Phone tag vs. one tap.</h2>
+  <div class="lane" id="laneA"><div class="lab" style="color:#ff8a7a">Today</div><div class="finish redg" id="finA"></div><div class="track"><div class="fill" style="background:#ff5a4e"></div><div class="vet" style="background:#ff5a4e">🧍</div></div></div>
+  <div class="lane" id="laneB"><div class="lab" style="color:#35d07f">Fastest Path</div><div class="finish" id="finB" style="color:#35d07f"></div><div class="track"><div class="fill" style="background:#35d07f"></div><div class="vet" style="background:#35d07f">🧍</div></div></div>
+  <div class="axis"><span>Consult placed</span><span>Day 30</span><span>Day 60</span><span>Day 90</span><span>Day 110</span></div>
+  <div style="margin-top:26px"><button class="btn ghost" id="go5">↻ Run again</button></div>
+</section>
+
+<!-- 6 -->
+<section class="slide" id="s6" data-notes="Then we stop playing phone tag. [Tap the link, pick a time.] The Veteran gets a text with three real options and taps one. Booked. If none work, they tell us why, and that reason goes straight to the scheduler.">
+  <div class="phonewrap">
+    <div class="phone"><div class="scr" id="scr6"></div></div>
+    <div style="flex:1">
+      <div class="kick">The Veteran picks · try it</div>
+      <h2 style="font-size:60px">Three options. One tap.<br><span class="grad">No phone tag.</span></h2>
+      <div class="sched">
+        <h3>Scheduler's screen, live</h3>
+        <div class="srow"><span>Veteran</span><b>Robert A.</b></div>
+        <div class="srow"><span>Consult</span><b>Neurology</b></div>
+        <div class="srow"><span>Status</span><span class="status" id="st6">Options sent</span></div>
+        <div class="srow" style="border:0"><span>Contact log</span><span id="log6" style="color:#cfdbee;max-width:440px;text-align:right">Text sent · auto-logged</span></div>
+      </div>
+      <button class="btn ghost" id="re6" style="margin-top:20px">↻ Reset phone</button>
+    </div>
+  </div>
+  <canvas id="confetti"></canvas>
+</section>
+
+<!-- 7 -->
+<section class="slide" id="s7" data-notes="And nothing stalls quietly. [Drag to day 3.] No answer in three days, it escalates to a supervisor with an AI summary of what happened. Day 3, not day 30.">
+  <div class="kick">Nothing stalls quietly</div>
+  <h2>Drag time forward.</h2>
+  <div style="display:flex;align-items:center;gap:30px"><div class="dayread" id="dr7">Day 0</div><input type="range" id="r7" min="0" max="30" value="0" style="flex:1"><button class="btn ghost" id="play7">▶ Play</button></div>
+  <div class="esc">
+    <div class="ecard" id="eA"><h3>Today</h3><div class="estate" id="tA"></div><p id="pA" style="margin-top:12px"></p></div>
+    <div class="ecard" id="eB"><h3>Fastest Path</h3><div class="estate" id="tB"></div><p id="pB" style="margin-top:12px"></p></div>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="slide cut" id="s8" data-notes="Illustrative calculator. Ask a facility leader in the room for their real consult volume and plug it in live.">
+  <div class="kick">What it's worth · plug in your facility's numbers</div>
+  <h2>Days of waiting, returned to Veterans.</h2>
+  <div class="calc">
+    <div>
+      <div class="ctl"><label>Specialty consults per month <b id="v8a"></b></label><input type="range" id="a8" min="100" max="4000" step="50" value="1200"></div>
+      <div class="ctl"><label>Share with a faster option found <b id="v8b"></b></label><input type="range" id="b8" min="5" max="80" step="1" value="25"></div>
+      <div class="ctl"><label>Average days sooner <b id="v8c"></b></label><input type="range" id="c8" min="3" max="60" step="1" value="20"></div>
+      <p style="font-size:20px">Illustrative. Defaults are assumptions, not VA data.</p>
+    </div>
+    <div class="result"><div class="v grad" id="out8">0</div><div class="l">Veteran-days of waiting returned per year</div><div class="y" id="yrs8"></div></div>
+  </div>
+</section>
+
+<!-- 9 -->
+<section class="slide cut" id="s9" data-notes="Judges will ask how this connects. Phase 1 is read-only, using data VA already has. Toggle to Phase 2 to show live booking. That honesty earns trust.">
+  <div class="kick">How it connects</div>
+  <div style="display:flex;align-items:center;justify-content:space-between"><h2 style="margin:6px 0;font-size:54px">Read-only first. Live booking next.</h2>
+  <div class="tog"><button class="on" data-ph="1">Phase 1 · Read-only</button><button data-ph="2">Phase 2 · Live</button></div></div>
+  <svg id="arch" viewBox="0 0 1380 600" style="width:1380px;height:600px;margin-top:10px"></svg>
+</section>
+
+<!-- 10 -->
+<section class="slide" id="s10" data-notes="This is live today on Azure: real drive times, AI-drafted outreach, real email. Phase 1 is read-only, on data VA already has. Pilot one specialty, one facility, 90 days. [Pause.] Give Veterans their 56 days back.">
+  <div class="kick">The ask</div>
+  <div class="days" id="grid10"></div>
+  <h1 style="font-size:96px;margin:10px 0">Give Veterans their <span class="grad">56 days</span> back.</h1>
+  <p style="font-size:30px;margin-bottom:34px">Live on Azure today · Pilot one specialty · one facility · read-only data · 90 days</p>
+  <div style="display:flex;gap:18px;justify-content:center"><a class="btn" href="/" style="text-decoration:none">Try the live Azure demo →</a><a class="btn ghost" href="https://fastestpath.makerdoctrine.com/" style="text-decoration:none">Concept overview</a></div>
+</section>
+
+</div>
+<div id="nav"></div>
+<div id="clock" title="Pitch timer · press R to reset">0:00 / 2:00</div>
+<div id="notes"><b>Speaker notes</b><span id="ntext"></span></div>
+
+<script>
+/* ---------- background particles ---------- */
+const bgc=document.getElementById("bgc"),bx=bgc.getContext("2d");let P=[],tint=[43,212,189];
+function rs(){bgc.width=innerWidth*devicePixelRatio;bgc.height=innerHeight*devicePixelRatio;bx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);}
+rs();for(let i=0;i<80;i++)P.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35});
+let curT=[...tint];
+(function loop(){bx.clearRect(0,0,innerWidth,innerHeight);for(let k=0;k<3;k++)curT[k]+=(tint[k]-curT[k])*.03;const c=curT.map(Math.round).join(",");
+ for(const p of P){p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>innerWidth)p.vx*=-1;if(p.y<0||p.y>innerHeight)p.vy*=-1;}
+ for(let i=0;i<P.length;i++){for(let j=i+1;j<P.length;j++){const a=P[i],b=P[j],d=Math.hypot(a.x-b.x,a.y-b.y);if(d<150){bx.strokeStyle=`rgba(${c},${(1-d/150)*.18})`;bx.beginPath();bx.moveTo(a.x,a.y);bx.lineTo(b.x,b.y);bx.stroke();}}
+  bx.fillStyle=`rgba(${c},.5)`;bx.beginPath();bx.arc(P[i].x,P[i].y,1.6,0,7);bx.fill();}
+ requestAnimationFrame(loop);})();
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);let T=[];
+const later=(fn,ms)=>{const t=setTimeout(fn,ms);T.push(t);return t;};
+const clearT=()=>{T.forEach(clearTimeout);T=[];cancelAnimationFrame(rafId);};let rafId=0;
+function countTo(el,to,ms,fmt=v=>Math.round(v).toLocaleString()){const s=performance.now(),from=0;cancelAnimationFrame(el._r);
+ const st=n=>{const k=Math.min(1,(n-s)/ms),e=1-Math.pow(1-k,3);el.textContent=fmt(from+(to-from)*e);if(k<1)el._r=requestAnimationFrame(st);};el._r=requestAnimationFrame(st);}
+function mkGrid(el){el.innerHTML=Array.from({length:56},(_,i)=>`<div class="day">${i+1}</div>`).join("");return [...el.children];}
+
+/* ---------- slide 2 ---------- */
+const g2=mkGrid($("#grid2"));
+const caps={1:"Consult placed.",4:"Waiting for a call.",10:"A letter is in the mail.",19:"Voicemail. Call back during business hours.",30:"Still checking the mailbox.",42:"\"Did they call yet?\"",50:"Wondering if he was forgotten.",56:"Finally seen."};
+function run2(){g2.forEach(d=>d.className="day");$("#cnt2").textContent="0";$("#cap2").textContent="";
+ g2.forEach((d,i)=>later(()=>{d.classList.add("f");$("#cnt2").textContent=i+1;if(caps[i+1])$("#cap2").textContent=caps[i+1];},400+i*85));}
+$("#grid2").onclick=()=>{clearT();run2();};
+
+/* ---------- slide 4 map ---------- */
+const PRJ=ll=>[((ll[1]+83.0)/1.9)*820,((28.7-ll[0])/1.3)*640];
+const HOME=[27.94,-82.29];
+const O4=[
+ {n:"Bay Pines VA",ll:[27.81,-82.78],bo:[-60,30],days:11,drive:55,w:true,d:true,t:"VA",c:"#35d07f",best:true},
+ {n:"Orlando VAMC",ll:[28.37,-81.27],bo:[-150,30],days:9,drive:114,w:true,d:false,t:"VA",c:"#4c9bff"},
+ {n:"Tampa VAMC · home clinic",ll:[28.064,-82.427],bo:[-200,-100],days:74,drive:25,w:false,d:true,t:"VA",c:"#ff5a4e",home:true},
+ {n:"Community neurology",ll:[27.80,-82.10],bo:[-40,34],days:6,drive:9,t:"CC",c:"#a98bff",cc:true}];
+function buildMap(){const land=[[28.75,-82.68],[28.3,-82.76],[28.0,-82.84],[27.86,-82.86],[27.74,-82.76],[27.62,-82.70],[27.35,-82.58],[27.35,-80.9],[28.75,-80.9]];const bay=[[27.99,-82.54],[27.92,-82.44],[27.80,-82.52],[27.64,-82.60],[27.60,-82.72],[27.70,-82.70],[27.80,-82.63],[27.90,-82.62]];
+ const pts=land.map(PRJ).map(p=>p.join(",")).join(" ");const h=PRJ(HOME);
+ let s=`<defs><radialGradient id="lg" cx="60%" cy="40%"><stop offset="0" stop-color="#16365d"/><stop offset="1" stop-color="#0c2140"/></radialGradient></defs>
+ <polygon points="${pts}" fill="url(#lg)" stroke="#2a4f7c" stroke-width="2"/><polygon points="${bay.map(PRJ).map(p=>p.join(",")).join(" ")}" fill="#071426" stroke="#2a4f7c" stroke-width="2"/><text x="370" y="120" fill="#2a4f7c" font-size="20" font-style="italic">Tampa Bay area</text>
+ <text x="24" y="600" fill="#2a4f7c" font-size="22" font-style="italic">Gulf of Mexico</text>`;
+ O4.forEach(o=>{const p=PRJ(o.ll);const mx=(h[0]+p[0])/2,my=Math.min(h[1],p[1])-70;
+   if(!o.home)s+=`<path class="arc" d="M${h[0]},${h[1]} Q${mx},${my} ${p[0]},${p[1]}" stroke="${o.c}" opacity="${o.cc?.5:1}" style="transition-delay:${O4.indexOf(o)*.25}s"/>`;});
+ O4.forEach((o,i)=>{const p=PRJ(o.ll);const bw=o.home?230:(o.cc?200:180);const bxp=Math.min(810-bw,Math.max(10,p[0]+o.bo[0])),byp=p[1]+o.bo[1];
+   if(o.best)s+=`<circle class="pulse" cx="${p[0]}" cy="${p[1]}" r="16" fill="none" stroke="#35d07f" stroke-width="3"/>`;
+   s+=`<g class="pin"><circle cx="${p[0]}" cy="${p[1]}" r="11" fill="${o.home?"#ff5a4e":o.c}" stroke="#fff" stroke-width="3" ${o.home?"":`class="ghostpin"`}/>
+   ${o.home?"":`<text class="ghostq" x="${p[0]}" y="${p[1]-20}" fill="#5f7699" font-size="22" text-anchor="middle">?</text>`}
+   <g class="badge" style="transition-delay:${.6+i*.25}s;${o.home?"opacity:1;transform:none":""}"><rect x="${bxp}" y="${byp}" width="${bw}" height="62" rx="12" fill="#081629" stroke="${o.c}" stroke-width="2"/>
+   <text x="${bxp+14}" y="${byp+26}" fill="#fff" font-size="18">${o.n}</text>
+   <text x="${bxp+14}" y="${byp+50}" fill="${o.c}" font-size="18">${o.cc?"Not needed":o.days+" days · "+o.drive+" min"}</text></g></g>`;});
+ s+=`<circle cx="${h[0]}" cy="${h[1]}" r="14" fill="#fff"/><text x="${h[0]}" y="${h[1]+6}" font-size="16" text-anchor="middle">🏠</text><text x="${h[0]+22}" y="${h[1]-14}" fill="#cfdbee" font-size="18" font-weight="700">Veteran home</text>`;
+ $("#map").innerHTML=s;}
+function reset4(){$("#s4").classList.remove("on4");$("#h4").textContent="What the scheduler sees today";$("#swap4").innerHTML='<span class="redg">74 days</span>';
+ $("#rk4").innerHTML=`<div class="rk" style="opacity:1;transform:none"><span class="n">1</span><div><b>Tampa VAMC</b><div style="font-size:18px;color:#8ea3c0">Home clinic · the only calendar visible</div></div><div class="d"><span class="no">74 days</span><br>25 min</div></div>`;$("#go4").style.display="";}
+function go4(){$("#s4").classList.add("on4");$("#go4").style.display="none";$("#h4").textContent="With Fastest Path";
+ const sw=$("#swap4");sw.innerHTML='<span class="redg" style="text-decoration:line-through;opacity:.6">74</span> → <span class="grad" id="sw4n">74</span><span class="grad"> days</span>';
+ later(()=>{const el=$("#sw4n");const s=performance.now();const st=n=>{const k=Math.min(1,(n-s)/1400);el.textContent=Math.round(74-(63*(1-Math.pow(1-k,3))));if(k<1)requestAnimationFrame(st);};requestAnimationFrame(st);},500);
+ const ord=[O4[0],O4[1],O4[2],O4[3]];
+ $("#rk4").innerHTML=ord.map((o,i)=>`<div class="rk ${o.best?"best":""}" style="transition-delay:${.9+i*.2}s"><span class="n">${o.cc?"·":i+1}</span><div><b>${o.n}</b>${o.best?' <span style="font:800 15px JetBrains Mono;color:#35d07f">BEST FIT</span>':""}<div style="font-size:18px;color:#8ea3c0">${o.cc?"Community · VA site meets the standard":o.t+" · standard 28 days / 60 min"}</div></div>
+  <div class="d">${o.cc?'<span style="color:#8ea3c0">not needed</span>':`<span class="${o.w?"ok":"no"}">${o.days} days ${o.w?"✓":"✗"}</span><br><span class="${o.d?"ok":"no"}">${o.drive} min ${o.d?"✓":"✗"}</span>`}</div></div>`).join("");
+ tint=[53,208,127];}
+$("#go4").onclick=go4;
+
+/* ---------- slide 5 race ---------- */
+const MAXD=110;
+const evA=[[0,"Consult placed"],[5,"Call #1: no answer"],[11,"Letter mailed"],[18,"Call #2: voicemail"],[27,"Veteran calls back, on hold"],[31,"Booked at home clinic"],[105,"Seen"]];
+const evB=[[0,"Text: 3 options"],[1,"Taps a time"],[12,"Seen at Bay Pines VA"]];
+function lane(id,evs,dur,fin){const L=$(id),tr=L.querySelector(".track"),fill=L.querySelector(".fill"),vet=L.querySelector(".vet");
+ L.querySelectorAll(".ev").forEach(e=>e.remove());fill.style.transition="none";vet.style.transition="none";fill.style.width="0";vet.style.left="0";L.querySelector(".finish").textContent="";
+ evs.forEach(([d,t],i)=>{const e=document.createElement("div");e.className="ev";e.textContent=t;e.style.left=(d/MAXD*100)+"%";e.style.bottom=(16+(i%2)*40)+"px";tr.appendChild(e);});
+ const last=evs[evs.length-1][0];
+ later(()=>{const ms=dur;fill.style.transition=`width ${ms}ms linear`;vet.style.transition=`left ${ms}ms linear`;fill.style.width=(last/MAXD*100)+"%";vet.style.left=(last/MAXD*100)+"%";
+  evs.forEach(([d],i)=>later(()=>tr.querySelectorAll(".ev")[i].classList.add("in"),ms*(d/last)));
+  later(()=>{countTo(L.querySelector(".finish"),last,700,v=>Math.round(v)+" days");},ms);},300);}
+function run5(){lane("#laneA",evA,5200);lane("#laneB",evB,900);}
+$("#go5").onclick=()=>{clearT();run5();};
+
+/* ---------- slide 6 phone ---------- */
+const scr=$("#scr6");
+const OPTS6=[{n:"Bay Pines VA",d:"Tue Nov 24 · 8:45 AM",m:55,c:"#157347"},{n:"Orlando VAMC",d:"Mon Nov 23 · 1:00 PM",m:114,c:"#1d5fbf"},{n:"Tampa VAMC",d:"Tue Jan 26 · 11:00 AM",m:25,c:"#7a4fd6"}];
+function setStatus(t,cls,log){const s=$("#st6");s.textContent=t;s.className="status "+(cls||"");if(log)$("#log6").textContent=log;}
+function phoneSMS(){scr.innerHTML=`<div class="sb"><b>VA Scheduling</b>Text message</div><div class="msgs" id="m6"><div class="typing"><i></i><i></i><i></i></div></div>`;
+ later(()=>{$("#m6").innerHTML=`<div class="bub">VA Scheduling: You have a referral ready to book. Reply 1, 2 or 3.<br><br>${OPTS6.map((o,i)=>`${i+1}) ${o.d} · ${o.n}, ~${o.m} min`).join("<br>")}<br><br><span class="lnk" id="lk6">See times and a map →</span></div>`;$("#lk6").onclick=phonePortal;},1300);}
+function phonePortal(){scr.innerHTML=`<div class="ptop">VA · Choose your appointment<small>Signed in through VA.gov · demo</small></div><div class="pbody">${OPTS6.map((o,i)=>`<div class="pcard"><div style="display:flex;gap:10px;align-items:center"><span style="width:24px;height:24px;border-radius:50%;background:${o.c};color:#fff;display:grid;place-items:center;font-weight:800;font-size:13px">${i+1}</span><div><b>${o.n}</b><div style="color:#667;font-size:13px">About ${o.m} min from home</div></div></div><button class="pbtn" data-c="${i}">Choose ${o.d}</button></div>`).join("")}<button class="pbtn gh" id="none6">None of these work</button></div>`;
+ scr.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>book6(+b.dataset.c));$("#none6").onclick=none6;setStatus("Veteran viewing options","","Link opened · auto-logged");}
+function book6(i){const o=OPTS6[i];scr.innerHTML=`<div class="ptop">VA · Choose your appointment<small>Signed in through VA.gov · demo</small></div><div class="pbody" style="align-items:center;justify-content:center;text-align:center"><div style="width:74px;height:74px;border-radius:50%;background:#157347;color:#fff;font-size:42px;display:grid;place-items:center;animation:pop .5s cubic-bezier(.3,1.6,.5,1)">✓</div><h3 style="margin:10px 0 4px">You're booked</h3><div class="pcard" style="width:100%"><b>${o.d}</b><br>${o.n}<br><span style="color:#667">About ${o.m} min from home</span></div></div>`;
+ setStatus("Scheduled · Day 1","done","Booked by Veteran online · "+o.n);confetti();}
+function none6(){scr.innerHTML=`<div class="ptop">What doesn't work?<small>Your answer goes to your scheduler</small></div><div class="pbody">${["Too far to drive","The times don't fit","I need a ride","Something else"].map(r=>`<button class="pbtn gh" data-r="${r}">${r}</button>`).join("")}</div>`;
+ scr.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{scr.innerHTML=`<div class="ptop">Thanks<small>A scheduler will follow up</small></div><div class="pbody" style="justify-content:center;text-align:center"><b style="font-size:18px">We'll find better options.</b><p style="font-size:15px;color:#667">Expect a call or text within one business day.</p></div>`;setStatus("Needs new options","warn",`Veteran said: "${b.dataset.r}" · routed to scheduler`);});}
+function reset6(){setStatus("Options sent","","Text sent · auto-logged");phoneSMS();}
+$("#re6").onclick=()=>{clearT();reset6();};
+/* confetti */
+const cf=$("#confetti"),cx=cf.getContext("2d");
+function confetti(){cf.width=1600;cf.height=900;const ps=Array.from({length:160},()=>({x:600+Math.random()*200,y:420,vx:(Math.random()-.5)*22,vy:-Math.random()*20-6,r:Math.random()*360,c:["#2bd4bd","#35d07f","#4c9bff","#ffb547","#a98bff","#fff"][Math.floor(Math.random()*6)],s:6+Math.random()*8}));
+ let f=0;(function st(){cx.clearRect(0,0,1600,900);ps.forEach(p=>{p.vy+=.6;p.x+=p.vx;p.y+=p.vy;p.r+=8;cx.save();cx.translate(p.x,p.y);cx.rotate(p.r*Math.PI/180);cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);cx.restore();});if(++f<130)requestAnimationFrame(st);else cx.clearRect(0,0,1600,900);})();}
+
+/* ---------- slide 7 escalation ---------- */
+function upd7(d){const r=$("#r7");r.value=d;r.style.setProperty("--p",(d/30*100)+"%");$("#dr7").textContent="Day "+d;
+ const A=$("#eA"),B=$("#eB");A.className="ecard";B.className="ecard";
+ let ta,pa,tb,pb;
+ if(d<30){ta=d===0?"Text? No. A phone call.":"Waiting…";pa=d===0?"Call attempt #1. No answer.":["Nobody knows this consult is stuck.","No alert. No owner.","It looks exactly like a consult in progress."][d%3];}
+ else{ta="Someone finally notices.";pa="Day 30. A month gone.";A.classList.add("alarm");}
+ if(d<3){tb=d===0?"3 options sent by text":"Waiting on the Veteran";pb="Every contact is logged automatically.";}
+ else if(d===3){tb="⚠ Escalated";pb="No reply in 3 days. Supervisor callback assigned, reason attached.";B.classList.add("alarm");}
+ else if(d===4){tb="Supervisor calls";pb="Reached the Veteran. Ride to Bay Pines was the issue.";B.classList.add("good");}
+ else{tb="✓ Booked";pb="Travel arranged. Scheduled on day 4.";B.classList.add("good");}
+ $("#tA").textContent=ta;$("#pA").textContent=pa;$("#tB").textContent=tb;$("#pB").textContent=pb;
+ $("#tA").style.color=d>=30?"#ff5a4e":"#8ea3c0";$("#tB").style.color=d===3?"#ff5a4e":d>3?"#35d07f":"#fff";}
+$("#r7").oninput=e=>upd7(+e.target.value);
+$("#play7").onclick=()=>{clearT();for(let d=0;d<=30;d++)later(()=>upd7(d),d*(d<6?650:180));};
+
+/* ---------- slide 8 calculator ---------- */
+function upd8(){const a=+$("#a8").value,b=+$("#b8").value,c=+$("#c8").value;
+ ["a8","b8","c8"].forEach(id=>{const e=$("#"+id);e.style.setProperty("--p",((e.value-e.min)/(e.max-e.min)*100)+"%");});
+ $("#v8a").textContent=a.toLocaleString();$("#v8b").textContent=b+"%";$("#v8c").textContent=c;
+ const v=a*12*(b/100)*c;countTo($("#out8"),v,600);$("#yrs8").textContent=`That's about ${Math.round(v/365).toLocaleString()} years of waiting, every year, at one facility.`;}
+["a8","b8","c8"].forEach(id=>$("#"+id).oninput=upd8);
+
+/* ---------- slide 9 architecture ---------- */
+function buildArch(){const N=[
+ {id:"cdw",x:20,y:30,w:330,t:"VA open slots",s:"VistA → Corporate Data Warehouse"},
+ {id:"ppms",x:20,y:170,w:330,t:"Community directory",s:"PPMS via Lighthouse Facilities API"},
+ {id:"dst",x:20,y:310,w:330,t:"Eligibility + drive time",s:"Consult Toolbox Decision Support Tool"},
+ {id:"cca",x:20,y:450,w:330,t:"Community availability",s:"Network admins · FHIR scheduling",p2:1},
+ {id:"eng",x:520,y:200,w:340,t:"Fastest Path engine",s:"Databricks + Dataverse · rank + rules",hot:1},
+ {id:"app",x:1030,y:30,w:330,t:"Scheduler screen",s:"Power Apps"},
+ {id:"vet",x:1030,y:200,w:330,t:"Veteran text + link",s:"Power Automate · VA.gov sign-in"},
+ {id:"sup",x:1030,y:370,w:330,t:"Day-3 escalation",s:"Supervisor queue"},
+ {id:"book",x:1030,y:510,w:330,t:"Live booking",s:"VA.gov scheduling services · HSRM",p2:1}];
+ const by=Object.fromEntries(N.map(n=>[n.id,n]));const H=82;
+ const E=[["cdw","eng"],["ppms","eng"],["dst","eng"],["cca","eng",1],["eng","app"],["eng","vet"],["eng","sup"],["eng","book",1]];
+ let s="";E.forEach(([a,b,p2],i)=>{const A=by[a],B=by[b];const x1=A.x+A.w,y1=A.y+H/2,x2=B.x,y2=B.y+H/2,mx=(x1+x2)/2;const d=`M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
+  s+=`<g class="${p2?"p2":""}"><path d="${d}" fill="none" stroke="#244064" stroke-width="3"/>${[0,1,2].map(k=>`<circle r="6" fill="${p2?"#a98bff":"#2bd4bd"}"><animateMotion dur="${2.4+i*.15}s" begin="${k*0.8}s" repeatCount="indefinite" path="${d}"/></circle>`).join("")}</g>`;});
+ N.forEach(n=>{s+=`<g class="anode ${n.hot?"hot":""} ${n.p2?"p2":""}"><rect x="${n.x}" y="${n.y}" width="${n.w}" height="${H}" rx="16" ${n.p2?'style="stroke:#a98bff"':""}/>
+  <text x="${n.x+20}" y="${n.y+34}" fill="#fff" font-size="24" font-weight="800">${n.t}</text><text x="${n.x+20}" y="${n.y+62}" fill="#8ea3c0" font-size="18">${n.s}</text></g>`;});
+ $("#arch").innerHTML=s;}
+document.querySelectorAll(".tog button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tog button").forEach(x=>x.classList.toggle("on",x===b));$("#s9").classList.toggle("phase2",b.dataset.ph==="2");});
+
+/* ---------- slide 10 ---------- */
+const g10=mkGrid($("#grid10"));
+function run10(){g10.forEach(d=>d.className="day f");g10.forEach((d,i)=>later(()=>{d.classList.remove("f");d.classList.add("g");},600+i*45));}
+
+/* ---------- pitch clock ---------- */
+let t0=null,ck=null;function startClock(){if(t0)return;t0=Date.now();ck=setInterval(()=>{const e=Math.floor((Date.now()-t0)/1000),el=document.getElementById("clock");el.textContent=Math.floor(e/60)+":"+String(e%60).padStart(2,"0")+" / 2:00";el.className=e>=120?"over":e>=100?"warn":"";},500);}
+["keydown","pointerdown"].forEach(ev=>addEventListener(ev,startClock,{once:true}));
+addEventListener("keydown",e=>{if(e.key.toLowerCase()==="r"&&e.target.tagName!=="INPUT"){t0=Date.now();startClock();}});
+/* ---------- deck engine ---------- */
+const S=[...document.querySelectorAll(".slide:not(.cut)")];let cur=0;
+const TINT=[[43,212,189],[255,90,78],[76,155,255],[76,155,255],[255,181,71],[43,212,189],[255,90,78],[53,208,127],[169,139,255],[53,208,127]];
+const ENTER={
+ s1:()=>{},s2:run2,s3:()=>document.querySelectorAll("#s3 .file").forEach((f,i)=>later(()=>f.classList.add("in"),300+i*350)),
+ s4:reset4,s5:run5,s6:reset6,s7:()=>upd7(0),s8:upd8,s9:()=>{},s10:run10};
+const LEAVE={s3:()=>document.querySelectorAll("#s3 .file").forEach(f=>f.classList.remove("in"))};
+const nav=$("#nav");nav.innerHTML=S.map((_,i)=>`<i data-i="${i}"></i>`).join("");nav.onclick=e=>{if(e.target.dataset.i)go(+e.target.dataset.i);};
+function go(n){n=Math.max(0,Math.min(S.length-1,n));const prev=S[cur];clearT();if(LEAVE[prev.id])LEAVE[prev.id]();
+ prev.querySelectorAll(".reveal").forEach(r=>r.classList.remove("in"));
+ cur=n;S.forEach((s,i)=>s.classList.toggle("on",i===n));const sl=S[n];
+ sl.querySelectorAll(".reveal").forEach(r=>later(()=>r.classList.add("in"),+(r.dataset.d||0)));
+ tint=TINT[["s1","s2","s3","s4","s5","s6","s7","s8","s9","s10"].indexOf(sl.id)]; ENTER[sl.id]&&ENTER[sl.id]();
+ [...nav.children].forEach((d,i)=>d.classList.toggle("on",i===n));$("#prog").style.width=((n+1)/S.length*100)+"%";
+ $("#ntext").textContent=sl.dataset.notes||"";try{history.replaceState(null,"","#s"+(n+1));}catch(e){}}
+function fit(){const k=Math.min(innerWidth/1600,innerHeight/900);$("#stage").style.transform=`translate(-50%,-50%) scale(${k})`;rs();}
+addEventListener("resize",fit);
+addEventListener("keydown",e=>{if(e.target.tagName==="INPUT")return;
+ if(["ArrowRight","PageDown"," "].includes(e.key)){e.preventDefault();go(cur+1);}
+ else if(["ArrowLeft","PageUp"].includes(e.key)){e.preventDefault();go(cur-1);}
+ else if(e.key==="Home")go(0);else if(e.key==="End")go(S.length-1);
+ else if(e.key.toLowerCase()==="n")$("#notes").classList.toggle("show");else if(e.key.toLowerCase()==="f")fs();});
+function fs(){try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}catch(e){}}
+$("#ntog").onclick=()=>$("#notes").classList.toggle("show");$("#fsb").onclick=fs;
+let tx=null;addEventListener("touchstart",e=>tx=e.touches[0].clientX,{passive:true});
+addEventListener("touchend",e=>{if(tx==null||e.target.tagName==="INPUT")return;const d=e.changedTouches[0].clientX-tx;if(Math.abs(d)>60)go(d<0?cur+1:cur-1);tx=null;});
+buildMap();buildArch();fit();const m=/^#s(\d+)$/.exec(location.hash);go(m?+m[1]-1:0);
+</script>
+</body>
+</html>

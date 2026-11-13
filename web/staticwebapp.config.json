@@ -1,6 +1,19 @@
 {
   "routes": [
     {
+      "route": "/pitch",
+      "rewrite": "/pitch.html",
+      "allowedRoles": [
+        "anonymous"
+      ]
+    },
+    {
+      "route": "/pitch.html",
+      "allowedRoles": [
+        "anonymous"
+      ]
+    },
+    {
       "route": "/present",
       "rewrite": "/present.html",
       "allowedRoles": [
