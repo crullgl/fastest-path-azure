@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Try Fastest Path (demo sign-in)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:"Source Sans 3","Segoe UI",system-ui,sans-serif;color:#eaf1fb;
+  background:radial-gradient(900px 500px at 80% -10%,#1d5fbf44,transparent),linear-gradient(170deg,#0b2545,#081a33);display:flex;flex-direction:column}
+.wrap{max-width:980px;margin:0 auto;padding:48px 24px;display:grid;grid-template-columns:1.1fr 1fr;gap:48px;align-items:center;flex:1}
+.brand{display:flex;align-items:center;gap:12px;font-weight:800;font-size:22px}
+.logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#2bb3a3,#1d5fbf);display:grid;place-items:center;font-size:22px}
+h1{font-size:46px;line-height:1.05;margin:22px 0 14px;font-weight:900;letter-spacing:-.5px}
+p{color:#c3d0e4;font-size:18px;line-height:1.5;margin:0 0 14px}
+ul{color:#c3d0e4;font-size:16.5px;line-height:1.5;padding-left:20px}
+li{margin:6px 0}
+.card{background:#fff;color:#1b1f24;border-radius:20px;padding:30px;box-shadow:0 30px 80px #0008}
+.card h2{margin:0 0 6px;font-size:24px}
+.card .sub{color:#5b6573;font-size:15px;margin-bottom:20px}
+.btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:14px;border-radius:12px;border:1px solid #d0d7e0;background:#fff;color:#1b1f24;font:700 17px "Source Sans 3",sans-serif;text-decoration:none;margin-bottom:12px}
+.btn:hover{border-color:#1d5fbf;box-shadow:0 0 0 3px #1d5fbf22}
+.btn.gh{background:#24292f;color:#fff;border-color:#24292f}
+.fine{font-size:13px;color:#6b7686;line-height:1.45;margin-top:14px}
+.note{background:#fff8e1;color:#6b4e00;border-radius:10px;padding:10px 12px;font-size:13.5px;margin-top:14px}
+footer{text-align:center;color:#7f93b1;font-size:13px;padding:18px}
+@media(max-width:820px){.wrap{grid-template-columns:1fr}h1{font-size:36px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div>
+    <div class="brand"><div class="logo">⇢</div>Fastest Path</div>
+    <h1>Every open appointment.<br>One screen.<br>The Veteran picks.</h1>
+    <p>A working hackathon demo running on Azure. Sign in to try it as a VA scheduler:</p>
+    <ul>
+      <li>See every VA site and community provider ranked with real Azure Maps drive times</li>
+      <li>Email appointment options. <b>The "Veteran" email comes to you</b>, written by Azure OpenAI</li>
+      <li>Open it on your phone and pick a time. Watch the scheduler screen update.</li>
+      <li>Or ignore it. Three minutes later it escalates to a supervisor, which is also you.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>Sign in to try the demo</h2>
+    <div class="sub">Use any personal or work Microsoft account, or GitHub.</div>
+    <a class="btn" href="/.auth/login/aad?post_login_redirect_uri=/">
+      <svg width="20" height="20" viewBox="0 0 21 21"><rect width="10" height="10" fill="#f25022"/><rect x="11" width="10" height="10" fill="#7fba00"/><rect y="11" width="10" height="10" fill="#00a4ef"/><rect x="11" y="11" width="10" height="10" fill="#ffb900"/></svg>
+      Continue with Microsoft</a>
+    <a class="btn gh" href="/.auth/login/github?post_login_redirect_uri=/">
+      <svg width="20" height="20" viewBox="0 0 16 16" fill="#fff"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      Continue with GitHub</a>
+    <div class="note">VA (va.gov) accounts can't sign in to outside demo apps without VA admin approval. Use a personal account.</div>
+    <div class="fine">All Veterans, providers and appointments are synthetic. Sign-in shares only your name and email with this demo, which uses your email to send you the demo messages (max 10 an hour). Not an official VA system.</div>
+  </div>
+</div>
+<footer>Fastest Path · VA hackathon demo · Built on Azure Static Web Apps, Functions, SQL, Maps, OpenAI and Communication Services</footer>
+</body>
+</html>

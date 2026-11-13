@@ -52,6 +52,7 @@ IF OBJECT_ID('dbo.Outreach') IS NULL CREATE TABLE dbo.Outreach(
   Channel varchar(10) NOT NULL, OptionsJson nvarchar(max) NOT NULL, MessageText nvarchar(max) NULL, AiDrafted bit NOT NULL DEFAULT 0,
   RespondedAt datetime2(0) NULL, Response nvarchar(200) NULL, Escalated bit NOT NULL DEFAULT 0, EscalatedAt datetime2(0) NULL,
   AiSummary nvarchar(max) NULL, Live bit NOT NULL DEFAULT 0);
+IF COL_LENGTH('dbo.Outreach','SentBy') IS NULL ALTER TABLE dbo.Outreach ADD SentBy nvarchar(120) NULL;
 IF OBJECT_ID('dbo.ContactLog') IS NULL CREATE TABLE dbo.ContactLog(
   LogId int IDENTITY PRIMARY KEY, ConsultId varchar(12) NOT NULL, At datetime2(0) NOT NULL DEFAULT SYSUTCDATETIME(),
   Kind varchar(10) NOT NULL, Text nvarchar(400) NOT NULL);

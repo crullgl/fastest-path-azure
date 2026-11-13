@@ -86,7 +86,7 @@ document.addEventListener("click", async e => {
 $("#reset").onclick = () => { $("#confirm").style.display = "inline"; };
 $("#no").onclick = () => { $("#confirm").style.display = "none"; };
 $("#yes").onclick = async () => { $("#confirm").style.display = "none"; toast("Resetting demo data…"); try { await api("demo/reset", { method: "POST" }); toast("Demo data reset"); seen = null; await Promise.all([load(), loadKpis()]); } catch (err) { toast(err.message); } };
-loadUser(); loadHealth(); load().catch(e => $("#esc").innerHTML = `<div class="empty">${esc(e.message)}</div>`); loadKpis();
+loadUser(); loadHealth(); api("me").then(m => { if (!m.admin) document.querySelector("#reset").closest(".panel").style.display = "none"; }).catch(() => {}); load().catch(e => $("#esc").innerHTML = `<div class="empty">${esc(e.message)}</div>`); loadKpis();
 setInterval(() => { load().catch(() => {}); loadKpis().catch(() => {}); }, 10000);
 </script>
 </body>

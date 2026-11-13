@@ -8,10 +8,12 @@ const { escalateDue } = require("../lib/escalate");
 
 const json = (body, status = 200) => ({ status, jsonBody: body, headers: { "cache-control": "no-store" } });
 const fmtSlot = d => new Date(d).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "UTC" });
-const who = req => {
-  try { const p = JSON.parse(Buffer.from(req.headers.get("x-ms-client-principal") || "", "base64").toString()); return p.userDetails || "scheduler"; }
-  catch { return "scheduler"; }
-};
+function principal(req) {
+  try { return JSON.parse(Buffer.from(req.headers.get("x-ms-client-principal") || "", "base64").toString()) || {}; } catch { return {}; }
+}
+const who = req => principal(req).userDetails || "scheduler";
+const userEmail = req => { const u = principal(req).userDetails || ""; return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(u) ? u : null; };
+const isAdmin = req => { const e = (userEmail(req) || "").toLowerCase(); return !!e && (process.env.ADMIN_EMAILS || "").toLowerCase().split(/[,; ]+/).includes(e); };
 const publicUrl = () => (process.env.PUBLIC_URL || "").replace(/\/$/, "");
 
 function route(name, methods, path, fn) {
@@ -90,15 +92,20 @@ route("outreach", ["POST"], "consults/{id}/outreach", async (req, ctx) => {
     <ol style="padding-left:20px">${chosen.map(o => `<li style="margin:6px 0"><b>${fmtSlot(o.slots[0].start)}</b> at ${o.name}<br><span style="color:#5b6573">about ${o.drive} min from home${o.type === "CC" ? " · community provider" : ""}</span></li>`).join("")}</ol>
     <p><a href="${link}" style="display:inline-block;background:#157347;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:700">Choose your time</a></p>
     <p style="font-size:12px;color:#8a94a3">Hackathon demo with synthetic data. Not an official VA message.</p></div></div>`;
-  const to = c.ContactEmail || process.env.DEMO_INBOX;
-  const res = await sendEmail(to, "Your appointment options are ready (demo)", text, html);
-  await q(`INSERT INTO dbo.Outreach(ConsultId,Token,SentAt,Channel,OptionsJson,MessageText,AiDrafted,Live) VALUES(@c,@t,SYSUTCDATETIME(),'Email',@o,@m,@ai,1);
+  // Demo: the "Veteran" email goes to whoever is signed in, so every tester sees the real email.
+  const me = userEmail(req);
+  const recent = me ? (await q("SELECT COUNT(*) AS n FROM dbo.Outreach WHERE SentBy=@u AND SentAt > DATEADD(hour,-1,SYSUTCDATETIME())", { u: me })).recordset[0].n : 0;
+  const limit = +(process.env.EMAILS_PER_HOUR || 10);
+  const to = me && recent < limit ? me : null;
+  const res = to ? await sendEmail(to, "Your appointment options are ready (demo)", text, html)
+    : { sent: false, reason: me ? `demo limit of ${limit} emails per hour reached` : "your sign-in has no email address" };
+  await q(`INSERT INTO dbo.Outreach(ConsultId,Token,SentAt,Channel,OptionsJson,MessageText,AiDrafted,Live,SentBy) VALUES(@c,@t,SYSUTCDATETIME(),'Email',@o,@m,@ai,1,@by);
            UPDATE dbo.Consult SET Status='Sent', DeclineReason=NULL WHERE ConsultId=@c`,
-    { c: c.ConsultId, t: token, o: JSON.stringify(chosen.map(o => ({ siteId: o.siteId, name: o.name, type: o.type, drive: o.drive, days: o.days, ll: o.ll, slots: o.slots }))), m: message, ai: drafted ? 1 : 0 });
+    { c: c.ConsultId, t: token, o: JSON.stringify(chosen.map(o => ({ siteId: o.siteId, name: o.name, type: o.type, drive: o.drive, days: o.days, ll: o.ll, slots: o.slots }))), m: message, ai: drafted ? 1 : 0, by: me || who(req) });
   await log(c.ConsultId, "auto", res.sent
     ? `Email sent with ${chosen.length} options via Azure Communication Services${drafted ? " (message drafted by Azure OpenAI)" : ""}`
     : `Outreach created with ${chosen.length} options; email not sent (${res.reason || res.status})`);
-  return json({ ok: true, emailed: res.sent, to: res.sent ? to.replace(/(.{2}).+(@.+)/, "$1***$2") : null, link, message, aiDrafted: !!drafted });
+  return json({ ok: true, emailed: res.sent, to: res.sent ? to.replace(/(.{2}).+(@.+)/, "$1***$2") : null, reason: res.sent ? null : res.reason, link, message, aiDrafted: !!drafted });
 });
 
 route("book", ["POST"], "consults/{id}/book", async req => {
@@ -168,7 +175,10 @@ route("supervisor", ["GET"], "supervisor", async () => {
   return json({ escalations: esc, aging, capacity, escalateAfterSeconds: +(process.env.ESCALATE_AFTER_SECONDS || 259200) });
 });
 
+route("me", ["GET"], "me", async req => json({ user: who(req), email: userEmail(req), admin: isAdmin(req) }));
+
 route("reset", ["POST"], "demo/reset", async (req, ctx) => {
+  if (!isAdmin(req)) return json({ error: "Only the demo owner can reset the data." }, 403);
   await seed();
   ctx.log("Demo data reset by " + who(req));
   return json({ ok: true });

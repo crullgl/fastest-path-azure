@@ -1,18 +1,81 @@
 {
   "routes": [
-    { "route": "/choose.html", "allowedRoles": ["anonymous"] },
-    { "route": "/api/choose/*", "allowedRoles": ["anonymous"] },
-    { "route": "/api/map/*", "allowedRoles": ["anonymous"] },
-    { "route": "/app.css", "allowedRoles": ["anonymous"] },
-    { "route": "/.auth/*", "allowedRoles": ["anonymous"] },
-    { "route": "/api/*", "allowedRoles": ["authenticated"] },
-    { "route": "/supervisor.html", "allowedRoles": ["authenticated"] },
-    { "route": "/index.html", "allowedRoles": ["authenticated"] },
-    { "route": "/", "allowedRoles": ["authenticated"] },
-    { "route": "/common.js", "allowedRoles": ["authenticated"] }
+    {
+      "route": "/login.html",
+      "allowedRoles": [
+        "anonymous"
+      ]
+    },
+    {
+      "route": "/.auth/login/twitter",
+      "statusCode": 404
+    },
+    {
+      "route": "/choose.html",
+      "allowedRoles": [
+        "anonymous"
+      ]
+    },
+    {
+      "route": "/api/choose/*",
+      "allowedRoles": [
+        "anonymous"
+      ]
+    },
+    {
+      "route": "/api/map/*",
+      "allowedRoles": [
+        "anonymous"
+      ]
+    },
+    {
+      "route": "/app.css",
+      "allowedRoles": [
+        "anonymous"
+      ]
+    },
+    {
+      "route": "/.auth/*",
+      "allowedRoles": [
+        "anonymous"
+      ]
+    },
+    {
+      "route": "/api/*",
+      "allowedRoles": [
+        "authenticated"
+      ]
+    },
+    {
+      "route": "/supervisor.html",
+      "allowedRoles": [
+        "authenticated"
+      ]
+    },
+    {
+      "route": "/index.html",
+      "allowedRoles": [
+        "authenticated"
+      ]
+    },
+    {
+      "route": "/",
+      "allowedRoles": [
+        "authenticated"
+      ]
+    },
+    {
+      "route": "/common.js",
+      "allowedRoles": [
+        "authenticated"
+      ]
+    }
   ],
   "responseOverrides": {
-    "401": { "redirect": "/.auth/login/aad?post_login_redirect_uri=.referrer", "statusCode": 302 }
+    "401": {
+      "redirect": "/login.html",
+      "statusCode": 302
+    }
   },
   "globalHeaders": {
     "X-Robots-Tag": "noindex",

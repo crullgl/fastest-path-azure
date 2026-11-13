@@ -18,7 +18,7 @@ async function loadUser() {
   try {
     const r = await fetch("/.auth/me"); const j = await r.json();
     const p = j.clientPrincipal;
-    $("#user").innerHTML = p ? `Signed in as <b>${esc(p.userDetails)}</b> · <a href="/.auth/logout">Sign out</a>` : `<a href="/.auth/login/aad">Sign in</a>`;
+    $("#user").innerHTML = p ? `Signed in as <b>${esc(p.userDetails)}</b> (${p.identityProvider === "github" ? "GitHub" : "Microsoft"}) · <a href="/.auth/logout?post_logout_redirect_uri=/login.html">Sign out</a>` : `<a href="/login.html">Sign in</a>`;
   } catch { /* local preview */ }
 }
 
