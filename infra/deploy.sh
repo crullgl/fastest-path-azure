@@ -24,12 +24,13 @@ for p in Microsoft.Sql Microsoft.Maps Microsoft.CognitiveServices Microsoft.Comm
   az provider register -n $p >/dev/null 2>&1 &
 done; wait
 for p in Microsoft.Sql Microsoft.Maps Microsoft.CognitiveServices Microsoft.Communication Microsoft.Web Microsoft.Storage Microsoft.KeyVault Microsoft.Insights Microsoft.OperationalInsights; do
-  for i in $(seq 1 40); do [ "$(az provider show -n $p --query registrationState -o tsv)" = "Registered" ] && break; sleep 6; done
+  for i in $(seq 1 ${PROV_WAIT:-40}); do [ "$(az provider show -n $p --query registrationState -o tsv)" = "Registered" ] && break; sleep 6; done
   ok "$p $(az provider show -n $p --query registrationState -o tsv)"
 done
 
 step "2/12 Resource group $RG ($LOC)"
-az group create -n $RG -l $LOC --tags project=fastest-path purpose=hackathon-demo data=synthetic -o none && ok "$RG"
+# A lab-provided resource group is used as is: its tags and location belong to whoever created it.
+if az group show -n $RG -o none 2>/dev/null; then ok "using existing $RG (tags left unchanged)"; else az group create -n $RG -l $LOC --tags project=fastest-path purpose=hackathon-demo data=synthetic -o none && ok "$RG"; fi
 
 step "3/12 Monitoring: Log Analytics + Application Insights"
 az monitor log-analytics workspace create -g $RG -n $LAW -l $LOC -o none 2>/dev/null || true
@@ -112,7 +113,7 @@ PID=$(az functionapp identity assign -g $RG -n $FUNC --query principalId -o tsv)
 az role assignment create --assignee-object-id $PID --assignee-principal-type ServicePrincipal --role "Key Vault Secrets User" --scope $KV_ID -o none 2>/dev/null || true
 kvref(){ echo "@Microsoft.KeyVault(VaultName=$KV;SecretName=$1)"; }
 SWA_HOST=$(az staticwebapp show -g $RG -n $SWA --query defaultHostname -o tsv 2>/dev/null)
-SETTINGS=(SQL_SERVER=$SQL.database.windows.net SQL_DB=$DB SQL_USER=fpadmin "SQL_PASSWORD=$(kvref sql-password)" DEMO_INBOX=$INBOX ESCALATE_AFTER_SECONDS=$ESC_SECONDS)
+SETTINGS=(SQL_SERVER=$SQL.database.windows.net SQL_DB=$DB SQL_USER=fpadmin "SQL_PASSWORD=$(kvref sql-password)" DEMO_INBOX=$INBOX ESCALATE_AFTER_SECONDS=$ESC_SECONDS ADMIN_EMAILS=${ADMIN_EMAILS:-$INBOX})
 [ -n "$MAPS_KEY" ] && SETTINGS+=("MAPS_KEY=$(kvref maps-key)")
 [ -n "$AOAI_DEP" ] && SETTINGS+=(AOAI_ENDPOINT=$AOAI_ENDPOINT "AOAI_KEY=$(kvref aoai-key)" AOAI_DEPLOYMENT=$AOAI_DEP)
 [ -n "$ACS_CONN" ] && SETTINGS+=("ACS_CONNECTION=$(kvref acs-connection)" ACS_SENDER=$ACS_SENDER)
