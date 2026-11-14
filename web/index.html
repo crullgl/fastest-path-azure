@@ -13,7 +13,7 @@
   <nav class="tabs"><a class="on" href="/">Scheduler</a><a href="/supervisor.html">Supervisor</a><a href="/present.html">Presentation</a></nav>
   <div class="hdr-right"><span id="user"></span></div>
 </header>
-<div class="banner">Hackathon demo. Not an official VA system. All data is synthetic. <b>Try it:</b> pick a consult, click "Email options to Veteran", and the email comes to you. Ignore it and it escalates in 3 minutes.</div>
+<div class="banner">Hackathon demo. Not an official VA system. All data is synthetic. <b>Try it:</b> pick a consult, click "Email options to Veteran", then "Open the Veteran's link" to answer as the Veteran. Ignore it and it escalates in 3 minutes.</div>
 <div class="azure" id="azure"></div>
 <div class="kpis" id="kpis"></div>
 <main>
@@ -130,7 +130,7 @@ document.addEventListener("click", async e => {
       if (!sel.length) return toast("Select at least one option");
       busy = "send"; renderDetail();
       let r; try { r = await api(`consults/${id}/outreach`, { method: "POST", body: JSON.stringify({ keys: sel }) }); } catch (e1) { toast("Waking up Azure services, retrying…"); r = await api(`consults/${id}/outreach`, { method: "POST", body: JSON.stringify({ keys: sel }) }); }
-      toast(r.emailed ? `Email sent to you at ${r.to}${r.aiDrafted ? " · drafted by Azure OpenAI" : ""}. Open it on your phone.` : `Options sent. No email (${r.reason}), so use "Open the Veteran's link" below.`);
+      toast(r.emailed && !r.guest ? `Email sent to you at ${r.to}${r.aiDrafted ? " · drafted by Azure OpenAI" : ""}. Open it on your phone.` : r.emailed ? `Options emailed${r.aiDrafted ? ", drafted by Azure OpenAI" : ""}. Use "Open the Veteran's link" below to answer as the Veteran.` : `Options sent. No email (${r.reason}), so use "Open the Veteran's link" below.`);
     }
     if (a.dataset.act === "book") { busy = "book"; const r = await api(`consults/${id}/book`, { method: "POST", body: JSON.stringify({ slotId: pick.slotId }) }); toast(`Booked at ${r.site}`); pick = null; }
     if (a.dataset.act === "call") { const r = await api(`consults/${id}/call`, { method: "POST", body: JSON.stringify({ outcome: "no answer" }) }); toast(r.attempts >= 2 ? "Two unanswered calls. Escalated." : "Call attempt logged"); }

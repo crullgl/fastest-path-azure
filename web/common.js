@@ -18,7 +18,7 @@ async function loadUser() {
   try {
     const r = await fetch("/.auth/me"); const j = await r.json();
     const p = j.clientPrincipal;
-    $("#user").innerHTML = p ? `Signed in as <b>${esc(p.userDetails)}</b> (${p.identityProvider === "github" ? "GitHub" : "Microsoft"}) · <a href="/.auth/logout?post_logout_redirect_uri=/login.html">Sign out</a>` : `<a href="/login.html">Sign in</a>`;
+    $("#user").innerHTML = p ? `Signed in as <b>${esc(p.userDetails)}</b> (${p.identityProvider === "github" ? "GitHub" : "Microsoft"}) · <a href="/.auth/logout?post_logout_redirect_uri=/login.html">Sign out</a>` : `Guest, no sign-in needed · <a href="/login.html">Sign in</a> to get the demo emails yourself`;
   } catch { /* local preview */ }
 }
 
@@ -26,7 +26,7 @@ async function loadHealth() {
   try {
     const h = await api("health");
     const svc = [["Azure SQL", h.sql], ["Azure Maps" + (h.mapsLiveRoutes ? ` · ${h.mapsLiveRoutes} live routes` : ""), h.maps], ["Azure OpenAI", h.openai],
-      ["Communication Services email", h.email], ["Application Insights", h.appInsights], ["Static Web Apps + Entra sign-in", true], ["Functions", true]];
+      ["Communication Services email", h.email], ["Application Insights", h.appInsights], ["Static Web Apps", true], ["Functions", true]];
     $("#azure").innerHTML = `<b>Running live on Azure:</b>` + svc.map(([n, on]) => `<span class="svc ${on ? "on" : ""}"><i></i>${esc(n)}</span>`).join("");
     window.__health = h;
   } catch (e) { $("#azure").innerHTML = `<span class="svc"><i></i>API unreachable: ${esc(e.message)}</span>`; }

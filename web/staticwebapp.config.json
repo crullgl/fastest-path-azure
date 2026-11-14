@@ -65,36 +65,6 @@
       "allowedRoles": [
         "anonymous"
       ]
-    },
-    {
-      "route": "/api/*",
-      "allowedRoles": [
-        "authenticated"
-      ]
-    },
-    {
-      "route": "/supervisor.html",
-      "allowedRoles": [
-        "authenticated"
-      ]
-    },
-    {
-      "route": "/index.html",
-      "allowedRoles": [
-        "authenticated"
-      ]
-    },
-    {
-      "route": "/",
-      "allowedRoles": [
-        "authenticated"
-      ]
-    },
-    {
-      "route": "/common.js",
-      "allowedRoles": [
-        "authenticated"
-      ]
     }
   ],
   "responseOverrides": {

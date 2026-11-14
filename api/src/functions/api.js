@@ -92,20 +92,22 @@ route("outreach", ["POST"], "consults/{id}/outreach", async (req, ctx) => {
     <ol style="padding-left:20px">${chosen.map(o => `<li style="margin:6px 0"><b>${fmtSlot(o.slots[0].start)}</b> at ${o.name}<br><span style="color:#5b6573">about ${o.drive} min from home${o.type === "CC" ? " · community provider" : ""}</span></li>`).join("")}</ol>
     <p><a href="${link}" style="display:inline-block;background:#157347;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:700">Choose your time</a></p>
     <p style="font-size:12px;color:#8a94a3">Hackathon demo with synthetic data. Not an official VA message.</p></div></div>`;
-  // Demo: the "Veteran" email goes to whoever is signed in, so every tester sees the real email.
+  // Demo: no sign-in needed. A signed-in tester gets the "Veteran" email themselves; a guest's email goes to the demo inbox.
   const me = userEmail(req);
-  const recent = me ? (await q("SELECT COUNT(*) AS n FROM dbo.Outreach WHERE SentBy=@u AND SentAt > DATEADD(hour,-1,SYSUTCDATETIME())", { u: me })).recordset[0].n : 0;
+  const guestInbox = (process.env.DEMO_INBOX || "").trim() || null;
+  const sender = me || "guest";
+  const recent = (await q("SELECT COUNT(*) AS n FROM dbo.Outreach WHERE SentBy=@u AND SentAt > DATEADD(hour,-1,SYSUTCDATETIME())", { u: sender })).recordset[0].n;
   const limit = +(process.env.EMAILS_PER_HOUR || 10);
-  const to = me && recent < limit ? me : null;
+  const to = recent < limit ? (me || guestInbox) : null;
   const res = to ? await sendEmail(to, "Your appointment options are ready (demo)", text, html)
-    : { sent: false, reason: me ? `demo limit of ${limit} emails per hour reached` : "your sign-in has no email address" };
+    : { sent: false, reason: recent >= limit ? `demo limit of ${limit} emails per hour reached` : "no demo inbox is set" };
   await q(`INSERT INTO dbo.Outreach(ConsultId,Token,SentAt,Channel,OptionsJson,MessageText,AiDrafted,Live,SentBy) VALUES(@c,@t,SYSUTCDATETIME(),'Email',@o,@m,@ai,1,@by);
            UPDATE dbo.Consult SET Status='Sent', DeclineReason=NULL WHERE ConsultId=@c`,
-    { c: c.ConsultId, t: token, o: JSON.stringify(chosen.map(o => ({ siteId: o.siteId, name: o.name, type: o.type, drive: o.drive, days: o.days, ll: o.ll, slots: o.slots }))), m: message, ai: drafted ? 1 : 0, by: me || who(req) });
+    { c: c.ConsultId, t: token, o: JSON.stringify(chosen.map(o => ({ siteId: o.siteId, name: o.name, type: o.type, drive: o.drive, days: o.days, ll: o.ll, slots: o.slots }))), m: message, ai: drafted ? 1 : 0, by: sender });
   await log(c.ConsultId, "auto", res.sent
     ? `Email sent with ${chosen.length} options via Azure Communication Services${drafted ? " (message drafted by Azure OpenAI)" : ""}`
     : `Outreach created with ${chosen.length} options; email not sent (${res.reason || res.status})`);
-  return json({ ok: true, emailed: res.sent, to: res.sent ? to.replace(/(.{2}).+(@.+)/, "$1***$2") : null, reason: res.sent ? null : res.reason, link, message, aiDrafted: !!drafted });
+  return json({ ok: true, emailed: res.sent, guest: !me, to: res.sent && me ? to.replace(/(.{2}).+(@.+)/, "$1***$2") : null, reason: res.sent ? null : res.reason, link, message, aiDrafted: !!drafted });
 });
 
 route("book", ["POST"], "consults/{id}/book", async req => {
